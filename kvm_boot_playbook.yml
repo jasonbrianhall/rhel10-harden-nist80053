@@ -20,6 +20,16 @@
     hardening_dir: support
 
   tasks:
+    - name: Check if .vm_ip file exists
+      stat:
+        path: ".vm_ip"
+      register: vm_ip_file
+      changed_when: false
+
+    - name: Skip VM creation if .vm_ip exists
+      meta: end_host
+      when: vm_ip_file.stat.exists
+
     - name: Check if source image exists
       stat:
         path: "{{ source_image }}"
@@ -170,11 +180,19 @@
   hosts: new_vms
   gather_facts: yes
   remote_user: cloud-user
-  become: no
+  become: yes
   vars:
     verification_playbook: verify.yml
     run_verification: true
   tasks:
+    - name: Configure passwordless sudo for cloud-user
+      lineinfile:
+        path: /etc/sudoers.d/cloud-user
+        line: "cloud-user ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+        validate: '/usr/sbin/visudo -cf %s'
+
     - name: Verify VM is responsive
       debug:
         msg: "VM {{ inventory_hostname }} is online and accessible"

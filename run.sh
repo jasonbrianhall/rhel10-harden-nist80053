@@ -1,6 +1,5 @@
 #!/bin/bash
 
-ANSIBLE_CONFIG=~/.ansible/ansible.cfg
 VM_IP_FILE=".vm_ip"
 
 # If no argument, boot the VM
@@ -53,7 +52,7 @@ case "$1" in
         ansible-playbook -i "$VM_IP", support/uncategorized.yml
         ;;
     ssh)
-        ansible-playbook -i "$VM_IP", support/ssh.yml
+    	ansible-playbook -i "$VM_IP", support/ssh.yml
         ;;
     accounts)
         ansible-playbook -i "$VM_IP", support/accounts_and_pam.yml
