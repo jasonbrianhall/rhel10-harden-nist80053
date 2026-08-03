@@ -14,6 +14,9 @@
 #   ansible-playbook accounts_and_pam.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
   vars:
     var_sudo_timestamp_timeout: '0'
     var_accounts_passwords_pam_faillock_deny: '3'
@@ -43,10 +46,16 @@
     var_accounts_user_umask: '077'
     var_postfix_root_mail_alias: system.administrator@mail.mil
   tasks:
+
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+
   - name: Ensure sudo is installed
-    ansible.builtin.package:
+    dnf:
       name: sudo
       state: present
+      use_backend: dnf5
     when: '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87100-4

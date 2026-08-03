@@ -1273,9 +1273,10 @@
   # disable a service, or otherwise change system behavior in a
   # breaking way. Review before running.
   - name: Enable SSH Server firewalld Firewall Exception - Ensure firewalld and NetworkManager packages are installed
-    package:
+    dnf:
       name: '{{ item }}'
       state: present
+      use_backend: dnf5
     with_items:
     - firewalld
     - NetworkManager
