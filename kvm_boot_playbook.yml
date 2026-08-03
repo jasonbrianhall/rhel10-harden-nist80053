@@ -52,31 +52,58 @@
         xml: |
           <domain type='kvm'>
             <name>{{ vm_name }}</name>
-            <memory unit='MiB'>{{ vm_memory }}</memory>
-            <currentMemory unit='MiB'>{{ vm_memory }}</currentMemory>
+            <memory unit='KiB'>{{ vm_memory * 1024 }}</memory>
+            <currentMemory unit='KiB'>{{ vm_memory * 1024 }}</currentMemory>
             <vcpu placement='static'>{{ vm_vcpus }}</vcpu>
             <os>
-              <type arch='x86_64'>hvm</type>
+              <type arch='x86_64' machine='pc-i440fx-10.2'>hvm</type>
               <boot dev='hd'/>
             </os>
+            <cpu mode='host-passthrough' check='none' migratable='on'/>
+            <clock offset='utc'/>
+            <on_poweroff>destroy</on_poweroff>
+            <on_reboot>restart</on_reboot>
+            <on_crash>destroy</on_crash>
             <devices>
               <emulator>/usr/bin/qemu-system-x86_64</emulator>
               <disk type='file' device='disk'>
                 <driver name='qemu' type='qcow2'/>
                 <source file='{{ target_image }}'/>
                 <target dev='vda' bus='virtio'/>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
               </disk>
+              <controller type='usb' index='0' model='piix3-uhci'>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+              </controller>
+              <controller type='pci' index='0' model='pci-root'/>
+              <controller type='virtio-serial' index='0'>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+              </controller>
               <interface type='network'>
                 <source network='{{ vm_network }}'/>
                 <model type='virtio'/>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
               </interface>
               <console type='pty'>
                 <target type='virtio' port='0'/>
               </console>
-              <graphics type='spice' port='-1' autoport='yes'/>
               <channel type='spicevmc'>
                 <target type='virtio' name='com.redhat.spice.0'/>
+                <address type='virtio-serial' controller='0' bus='0' port='1'/>
               </channel>
+              <input type='mouse' bus='ps2'/>
+              <input type='keyboard' bus='ps2'/>
+              <graphics type='spice' autoport='yes'>
+                <listen type='address'/>
+              </graphics>
+              <audio id='1' type='spice'/>
+              <video>
+                <model type='cirrus' vram='16384' heads='1' primary='yes'/>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+              </video>
+              <memballoon model='virtio'>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+              </memballoon>
             </devices>
           </domain>
 
@@ -154,16 +181,32 @@
   become: no
   vars:
     verification_playbook: verify.yml
+    # Hardening playbooks - set to true to run, false to skip
+    run_verification: true
+    run_ssh_hardening: false
+    run_accounts_and_pam_hardening: false
+    run_audit_and_logging_hardening: false
+    run_selinux_hardening: false
+    run_filesystem_and_mounts_hardening: false
+    run_kernel_and_bootloader_hardening: false
+    run_network_and_firewall_hardening: false
+    run_software_and_services_hardening: false
+    run_session_and_display_hardening: false
+    run_time_sync_and_mail_hardening: false
+    run_file_integrity_hardening: false
+    run_identity_and_smartcard_hardening: false
+    run_uncategorized_hardening: false
+    hardening_dir: support
   tasks:
     - name: Verify VM is responsive
       debug:
         msg: "VM {{ inventory_hostname }} is online and accessible"
-      when: hostvars['localhost'].run_verification
+      when: run_verification
 
     - name: Run verification playbook
       include_tasks: "{{ verification_playbook }}"
       ignore_errors: yes
-      when: hostvars['localhost'].run_verification
+      when: run_verification
 
 - name: Run RHEL STIG hardening (as cloud-user)
   hosts: new_vms
@@ -171,56 +214,71 @@
   remote_user: cloud-user
   become: no
   vars:
-    hardening_dir: "{{ hostvars['localhost'].hardening_dir }}"
+    # Hardening playbooks - set to true to run, false to skip
+    run_verification: true
+    run_ssh_hardening: false
+    run_accounts_and_pam_hardening: false
+    run_audit_and_logging_hardening: false
+    run_selinux_hardening: false
+    run_filesystem_and_mounts_hardening: false
+    run_kernel_and_bootloader_hardening: false
+    run_network_and_firewall_hardening: false
+    run_software_and_services_hardening: false
+    run_session_and_display_hardening: false
+    run_time_sync_and_mail_hardening: false
+    run_file_integrity_hardening: false
+    run_identity_and_smartcard_hardening: false
+    run_uncategorized_hardening: false
+    hardening_dir: support
   tasks:
     - name: Include SSH hardening
       include_tasks: "{{ hardening_dir }}/ssh.yml"
-      when: hostvars['localhost'].run_ssh_hardening
+      when: run_ssh_hardening
 
     - name: Include accounts and PAM hardening
       include_tasks: "{{ hardening_dir }}/accounts_and_pam.yml"
-      when: hostvars['localhost'].run_accounts_and_pam_hardening
+      when: run_accounts_and_pam_hardening
 
     - name: Include audit and logging hardening
       include_tasks: "{{ hardening_dir }}/audit_and_logging.yml"
-      when: hostvars['localhost'].run_audit_and_logging_hardening
+      when: run_audit_and_logging_hardening
 
     - name: Include SELinux hardening
       include_tasks: "{{ hardening_dir }}/selinux.yml"
-      when: hostvars['localhost'].run_selinux_hardening
+      when: run_selinux_hardening
 
     - name: Include filesystem and mounts hardening
       include_tasks: "{{ hardening_dir }}/filesystem_and_mounts.yml"
-      when: hostvars['localhost'].run_filesystem_and_mounts_hardening
+      when: run_filesystem_and_mounts_hardening
 
     - name: Include kernel and bootloader hardening
       include_tasks: "{{ hardening_dir }}/kernel_and_bootloader.yml"
-      when: hostvars['localhost'].run_kernel_and_bootloader_hardening
+      when: run_kernel_and_bootloader_hardening
 
     - name: Include network and firewall hardening
       include_tasks: "{{ hardening_dir }}/network_and_firewall.yml"
-      when: hostvars['localhost'].run_network_and_firewall_hardening
+      when: run_network_and_firewall_hardening
 
     - name: Include software and services hardening
       include_tasks: "{{ hardening_dir }}/software_and_services.yml"
-      when: hostvars['localhost'].run_software_and_services_hardening
+      when: run_software_and_services_hardening
 
     - name: Include session and display hardening
       include_tasks: "{{ hardening_dir }}/session_and_display.yml"
-      when: hostvars['localhost'].run_session_and_display_hardening
+      when: run_session_and_display_hardening
 
     - name: Include time sync and mail hardening
       include_tasks: "{{ hardening_dir }}/time_sync_and_mail.yml"
-      when: hostvars['localhost'].run_time_sync_and_mail_hardening
+      when: run_time_sync_and_mail_hardening
 
     - name: Include file integrity hardening
       include_tasks: "{{ hardening_dir }}/file_integrity.yml"
-      when: hostvars['localhost'].run_file_integrity_hardening
+      when: run_file_integrity_hardening
 
     - name: Include identity and smartcard hardening
       include_tasks: "{{ hardening_dir }}/identity_and_smartcard.yml"
-      when: hostvars['localhost'].run_identity_and_smartcard_hardening
+      when: run_identity_and_smartcard_hardening
 
     - name: Include uncategorized hardening
       include_tasks: "{{ hardening_dir }}/uncategorized.yml"
-      when: hostvars['localhost'].run_uncategorized_hardening
+      when: run_uncategorized_hardening

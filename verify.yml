@@ -1,109 +1,95 @@
 ---
-- name: Verify RHEL system is operational
-  hosts: all
-  gather_facts: yes
-  tasks:
-    - name: Check system information
-      debug:
-        msg: |
-          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
-          Hostname: {{ ansible_hostname }}
-          Kernel: {{ ansible_kernel }}
-          Uptime: {{ ansible_uptime_seconds | int / 3600 | int }} hours
+- name: Check system information
+  debug:
+    msg: |
+      OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+      Hostname: {{ ansible_hostname }}
+      Kernel: {{ ansible_kernel }}
+      Uptime: {{ ansible_uptime_seconds | int / 3600 | int }} hours
 
-    - name: Verify network connectivity
-      command: ip addr show
-      register: ip_output
-      changed_when: false
+- name: Verify network connectivity
+  command: ip addr show
+  register: ip_output
+  changed_when: false
 
-    - name: Display network configuration
-      debug:
-        msg: "{{ ip_output.stdout_lines }}"
+- name: Display network configuration
+  debug:
+    msg: "{{ ip_output.stdout_lines }}"
 
-    - name: Test DNS resolution
-      command: nslookup google.com
-      register: dns_test
-      changed_when: false
-      ignore_errors: yes
+- name: Test DNS resolution
+  command: nslookup google.com
+  register: dns_test
+  changed_when: false
+  ignore_errors: yes
 
-    - name: Display DNS test result
-      debug:
-        msg: "DNS working: {{ 'yes' if dns_test.rc == 0 else 'no' }}"
+- name: Display DNS test result
+  debug:
+    msg: "DNS working: {{ 'yes' if dns_test.rc == 0 else 'no' }}"
 
-    - name: Check disk space
-      shell: "df -h / | tail -1 | awk '{print $1, $2, $3, $4, $5}'"
-      register: disk_info
-      changed_when: false
+- name: Check disk space
+  shell: "df -h / | tail -1 | awk '{print $1, $2, $3, $4, $5}'"
+  register: disk_info
+  changed_when: false
 
-    - name: Display disk usage
-      debug:
-        msg: "Root filesystem: {{ disk_info.stdout }}"
+- name: Display disk usage
+  debug:
+    msg: "Root filesystem: {{ disk_info.stdout }}"
 
-    - name: Check memory
-      shell: "free -h | grep Mem | awk '{print \"Total: \" $2 \" Used: \" $3 \" Available: \" $7}'"
-      register: memory_info
-      changed_when: false
+- name: Check memory
+  shell: "free -h | grep Mem | awk '{print \"Total: \" $2 \" Used: \" $3 \" Available: \" $7}'"
+  register: memory_info
+  changed_when: false
 
-    - name: Display memory usage
-      debug:
-        msg: "{{ memory_info.stdout }}"
+- name: Display memory usage
+  debug:
+    msg: "{{ memory_info.stdout }}"
 
-    - name: Check CPU info
-      shell: "nproc"
-      register: cpu_count
-      changed_when: false
+- name: Check CPU info
+  shell: "nproc"
+  register: cpu_count
+  changed_when: false
 
-    - name: Display CPU count
-      debug:
-        msg: "CPU cores: {{ cpu_count.stdout }}"
+- name: Display CPU count
+  debug:
+    msg: "CPU cores: {{ cpu_count.stdout }}"
 
-    - name: Verify systemd is running
-      command: systemctl status
-      register: systemd_status
-      changed_when: false
+- name: Verify systemd is running
+  command: systemctl status
+  register: systemd_status
+  changed_when: false
 
-    - name: Display systemd status
-      debug:
-        msg: "Systemd running: {{ 'yes' if systemd_status.rc == 0 else 'no' }}"
+- name: Display systemd status
+  debug:
+    msg: "Systemd running: {{ 'yes' if systemd_status.rc == 0 else 'no' }}"
 
-    - name: Check for critical services
-      systemd:
-        name: "{{ item }}"
-        enabled: yes
-      register: service_check
-      ignore_errors: yes
-      loop:
-        - sshd
-        - chronyd
-        - NetworkManager
+- name: Check for critical services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+  register: service_check
+  ignore_errors: yes
+  loop:
+    - sshd
+    - chronyd
+    - NetworkManager
 
-    - name: Display service status
-      debug:
-        msg: "Service {{ item.item }}: {{ 'active' if item.status.ActiveState == 'active' else 'inactive' }}"
-      loop: "{{ service_check.results }}"
-      when: item.status is defined
+- name: Display service status
+  debug:
+    msg: "Service {{ item.item }}: {{ 'active' if item.status.ActiveState == 'active' else 'inactive' }}"
+  loop: "{{ service_check.results }}"
+  when: item.status is defined
 
-    - name: Check SELinux status
-      shell: "getenforce 2>/dev/null || echo 'Not available'"
-      register: selinux_status
-      changed_when: false
+- name: Check SELinux status
+  shell: "getenforce 2>/dev/null || echo 'Not available'"
+  register: selinux_status
+  changed_when: false
 
-    - name: Display SELinux status
-      debug:
-        msg: "SELinux: {{ selinux_status.stdout }}"
+- name: Display SELinux status
+  debug:
+    msg: "SELinux: {{ selinux_status.stdout }}"
 
-    - name: Verify sudo access
-      command: sudo -n true
-      register: sudo_test
-      changed_when: false
-      ignore_errors: yes
-
-    - name: Display sudo status
-      debug:
-        msg: "Sudo access: {{ 'yes' if sudo_test.rc == 0 else 'no' }}"
-
-    - name: Verification complete
-      debug:
-        msg: |
-          ✓ System verification passed
-          VM is ready for hardening
+- name: Verification complete
+  debug:
+    msg: |
+      ✓ System verification passed
+      VM is ready for hardening
