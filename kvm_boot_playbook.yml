@@ -17,20 +17,6 @@
 
     # Hardening playbooks - set to true to run, false to skip
     run_verification: true
-    run_ssh_hardening: false
-    run_accounts_and_pam_hardening: false
-    run_audit_and_logging_hardening: false
-    run_selinux_hardening: false
-    run_filesystem_and_mounts_hardening: false
-    run_kernel_and_bootloader_hardening: false
-    run_network_and_firewall_hardening: false
-    run_software_and_services_hardening: false
-    run_session_and_display_hardening: false
-    run_time_sync_and_mail_hardening: false
-    run_file_integrity_hardening: false
-    run_identity_and_smartcard_hardening: false
-    run_uncategorized_hardening: false
-
     hardening_dir: support
 
   tasks:
@@ -181,22 +167,8 @@
   become: no
   vars:
     verification_playbook: verify.yml
-    # Hardening playbooks - set to true to run, false to skip
     run_verification: true
-    run_ssh_hardening: false
-    run_accounts_and_pam_hardening: false
-    run_audit_and_logging_hardening: false
-    run_selinux_hardening: false
-    run_filesystem_and_mounts_hardening: false
-    run_kernel_and_bootloader_hardening: false
-    run_network_and_firewall_hardening: false
-    run_software_and_services_hardening: false
-    run_session_and_display_hardening: false
-    run_time_sync_and_mail_hardening: false
-    run_file_integrity_hardening: false
-    run_identity_and_smartcard_hardening: false
-    run_uncategorized_hardening: false
-    hardening_dir: support
+    # Hardening playbooks - set to true to run, false to skip
   tasks:
     - name: Verify VM is responsive
       debug:
@@ -215,8 +187,7 @@
   become: no
   vars:
     # Hardening playbooks - set to true to run, false to skip
-    run_verification: true
-    run_ssh_hardening: false
+    run_ssh_hardening: true
     run_accounts_and_pam_hardening: false
     run_audit_and_logging_hardening: false
     run_selinux_hardening: false
