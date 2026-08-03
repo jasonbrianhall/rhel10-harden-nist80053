@@ -14,6 +14,24 @@
     ip_poll_interval: 5  # seconds between IP address checks
     ip_poll_retries: 60  # number of times to check for IP
 
+    # Hardening playbooks - set to true to run, false to skip
+    run_verification: true
+    run_ssh_hardening: false
+    run_accounts_and_pam_hardening: false
+    run_audit_and_logging_hardening: false
+    run_selinux_hardening: false
+    run_filesystem_and_mounts_hardening: false
+    run_kernel_and_bootloader_hardening: false
+    run_network_and_firewall_hardening: false
+    run_software_and_services_hardening: false
+    run_session_and_display_hardening: false
+    run_time_sync_and_mail_hardening: false
+    run_file_integrity_hardening: false
+    run_identity_and_smartcard_hardening: false
+    run_uncategorized_hardening: false
+
+    hardening_dir: support
+
   tasks:
     - name: Check if source image exists
       stat:
@@ -137,7 +155,67 @@
     - name: Verify VM is responsive
       debug:
         msg: "VM {{ inventory_hostname }} is online and accessible"
+      when: hostvars['localhost'].run_verification
 
     - name: Run verification playbook
       include_tasks: "{{ verification_playbook }}"
       ignore_errors: yes
+      when: hostvars['localhost'].run_verification
+
+- name: Run RHEL STIG hardening
+  hosts: new_vms
+  gather_facts: no
+  vars:
+    hardening_dir: "{{ hostvars['localhost'].hardening_dir }}"
+  tasks:
+    - name: Import SSH hardening
+      import_tasks: "{{ hardening_dir }}/ssh.yml"
+      when: hostvars['localhost'].run_ssh_hardening
+
+    - name: Import accounts and PAM hardening
+      import_tasks: "{{ hardening_dir }}/accounts_and_pam.yml"
+      when: hostvars['localhost'].run_accounts_and_pam_hardening
+
+    - name: Import audit and logging hardening
+      import_tasks: "{{ hardening_dir }}/audit_and_logging.yml"
+      when: hostvars['localhost'].run_audit_and_logging_hardening
+
+    - name: Import SELinux hardening
+      import_tasks: "{{ hardening_dir }}/selinux.yml"
+      when: hostvars['localhost'].run_selinux_hardening
+
+    - name: Import filesystem and mounts hardening
+      import_tasks: "{{ hardening_dir }}/filesystem_and_mounts.yml"
+      when: hostvars['localhost'].run_filesystem_and_mounts_hardening
+
+    - name: Import kernel and bootloader hardening
+      import_tasks: "{{ hardening_dir }}/kernel_and_bootloader.yml"
+      when: hostvars['localhost'].run_kernel_and_bootloader_hardening
+
+    - name: Import network and firewall hardening
+      import_tasks: "{{ hardening_dir }}/network_and_firewall.yml"
+      when: hostvars['localhost'].run_network_and_firewall_hardening
+
+    - name: Import software and services hardening
+      import_tasks: "{{ hardening_dir }}/software_and_services.yml"
+      when: hostvars['localhost'].run_software_and_services_hardening
+
+    - name: Import session and display hardening
+      import_tasks: "{{ hardening_dir }}/session_and_display.yml"
+      when: hostvars['localhost'].run_session_and_display_hardening
+
+    - name: Import time sync and mail hardening
+      import_tasks: "{{ hardening_dir }}/time_sync_and_mail.yml"
+      when: hostvars['localhost'].run_time_sync_and_mail_hardening
+
+    - name: Import file integrity hardening
+      import_tasks: "{{ hardening_dir }}/file_integrity.yml"
+      when: hostvars['localhost'].run_file_integrity_hardening
+
+    - name: Import identity and smartcard hardening
+      import_tasks: "{{ hardening_dir }}/identity_and_smartcard.yml"
+      when: hostvars['localhost'].run_identity_and_smartcard_hardening
+
+    - name: Import uncategorized hardening
+      import_tasks: "{{ hardening_dir }}/uncategorized.yml"
+      when: hostvars['localhost'].run_uncategorized_hardening
