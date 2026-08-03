@@ -14,6 +14,7 @@
 #   ansible-playbook ssh.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
   vars:
     var_ssh_client_rekey_limit_size: 512M
     var_ssh_client_rekey_limit_time: 1h
