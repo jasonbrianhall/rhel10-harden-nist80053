@@ -14,10 +14,17 @@
 #   ansible-playbook selinux.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
   vars:
     var_selinux_policy_name: targeted
     var_selinux_state: enforcing
   tasks:
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+
   - name: Configure SELinux Policy
     block:
     - name: Check for duplicate values
