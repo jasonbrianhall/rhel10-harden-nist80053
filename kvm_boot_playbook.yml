@@ -146,9 +146,11 @@
           Run hardening playbook with:
           ansible-playbook -i {{ rhel_vm_ip }}, hardening.yml
 
-- name: Run verification on new VM
+- name: Run verification on new VM (as cloud-user)
   hosts: new_vms
   gather_facts: yes
+  remote_user: cloud-user
+  become: no
   vars:
     verification_playbook: verify.yml
   tasks:
@@ -162,9 +164,11 @@
       ignore_errors: yes
       when: hostvars['localhost'].run_verification
 
-- name: Run RHEL STIG hardening
+- name: Run RHEL STIG hardening (as cloud-user)
   hosts: new_vms
   gather_facts: no
+  remote_user: cloud-user
+  become: no
   vars:
     hardening_dir: "{{ hostvars['localhost'].hardening_dir }}"
   tasks:
