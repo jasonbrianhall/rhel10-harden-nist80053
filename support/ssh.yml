@@ -1273,13 +1273,7 @@
   # disable a service, or otherwise change system behavior in a
   # breaking way. Review before running.
   - name: Enable SSH Server firewalld Firewall Exception - Ensure firewalld and NetworkManager packages are installed
-    dnf:
-      name: '{{ item }}'
-      state: present
-      use_backend: dnf5
-    with_items:
-    - firewalld
-    - NetworkManager
+    command: yum install -y firewalld NetworkManager
     when:
     - ansible_facts.packages is defined
     - '"kernel-core" in ansible_facts.packages'
@@ -1401,6 +1395,19 @@
     - medium_severity
     - no_reboot_needed
     - dangerous
+
+  - name: Start and enable firewalld and NetworkManager
+    systemd:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    loop:
+      - firewalld
+      - NetworkManager
+
+  - name: Refresh ansible facts
+    setup:
+
 
   # DANGEROUS: this task can lock out access, remove software,
   # disable a service, or otherwise change system behavior in a
