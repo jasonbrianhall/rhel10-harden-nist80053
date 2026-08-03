@@ -1,0 +1,30 @@
+---
+###############################################################################
+# RHEL 10 STIG remediation - entry point
+#
+# Imports every functional-area playbook. Each one can also be run standalone.
+#
+# To skip every task flagged `dangerous` (root login lockdown, account
+# lockout, package removal, service disabling, mount option changes,
+# SELinux enforcing, FIPS, GRUB, etc.) across ALL areas at once:
+#
+#   ansible-playbook main.yml --skip-tags dangerous
+#
+# To run ONLY the dangerous tasks (e.g. once you've reviewed them):
+#
+#   ansible-playbook main.yml --tags dangerous
+###############################################################################
+
+- import_playbook: ssh.yml
+- import_playbook: accounts_and_pam.yml
+- import_playbook: audit_and_logging.yml
+- import_playbook: selinux.yml
+- import_playbook: filesystem_and_mounts.yml
+- import_playbook: kernel_and_bootloader.yml
+- import_playbook: network_and_firewall.yml
+- import_playbook: software_and_services.yml
+- import_playbook: session_and_display.yml
+- import_playbook: time_sync_and_mail.yml
+- import_playbook: file_integrity.yml
+- import_playbook: identity_and_smartcard.yml
+- import_playbook: uncategorized.yml

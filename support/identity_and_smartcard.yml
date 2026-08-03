@@ -1,0 +1,284 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: identity_and_smartcard
+# SSSD, smartcard/PKI authentication.
+#
+# 13 tasks total, 0 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook identity_and_smartcard.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook identity_and_smartcard.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    var_smartcard_drivers: cac
+    var_sssd_certificate_verification_digest_function: sha512
+  tasks:
+  - name: Configure smartcard driver block
+    block:
+    - name: Check if card_drivers is defined
+      ansible.builtin.command: /usr/bin/opensc-tool -G app:default:card_drivers
+      changed_when: false
+      register: card_drivers
+    - name: Configure opensc Smart Card Drivers
+      ansible.builtin.command: '/usr/bin/opensc-tool -S app:default:card_drivers:{{ var_smartcard_drivers }}
+
+        '
+      when:
+      - card_drivers.stdout != var_smartcard_drivers
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - opensc_conf_cd.stat.exists
+    tags:
+    - CCE-90065-4
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-2(1)
+    - NIST-800-53-IA-2(11)
+    - NIST-800-53-IA-2(2)
+    - NIST-800-53-IA-2(3)
+    - NIST-800-53-IA-2(4)
+    - NIST-800-53-IA-2(6)
+    - NIST-800-53-IA-2(7)
+    - PCI-DSS-Req-8.3
+    - configure_opensc_card_drivers
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure that "certificate_verification" is not set in /etc/sssd/sssd.conf
+    community.general.ini_file:
+      path: /etc/sssd/sssd.conf
+      section: sssd
+      option: certificate_verification
+      state: absent
+      mode: 384
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-86192-2
+    - NIST-800-53-IA-2(11)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_certificate_verification
+
+  - name: Ensure that "certificate_verification" is not set in  /etc/sssd/conf.d/*.conf
+    community.general.ini_file:
+      path: /etc/sssd/conf.d/*.conf
+      section: sssd
+      option: certificate_verification
+      state: absent
+      mode: 384
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-86192-2
+    - NIST-800-53-IA-2(11)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_certificate_verification
+
+  - name: Ensure that "certificate_verification" is set
+    community.general.ini_file:
+      path: /etc/sssd/conf.d/certificate_verification.conf
+      section: sssd
+      option: certificate_verification
+      value: ocsp_dgst={{ var_sssd_certificate_verification_digest_function }}
+      state: present
+      mode: 384
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-86192-2
+    - NIST-800-53-IA-2(11)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_certificate_verification
+
+  - name: Test for domain group
+    ansible.builtin.command: grep '^\s*\[domain\/[^]]*]' /etc/sssd/sssd.conf
+    register: test_grep_domain
+    failed_when: false
+    changed_when: false
+    check_mode: false
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90275-9
+    - PCI-DSS-Req-8.3
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_enable_smartcards
+
+  - name: Add default domain group (if no domain there)
+    community.general.ini_file:
+      path: /etc/sssd/sssd.conf
+      section: '{{ item.section }}'
+      option: '{{ item.option }}'
+      value: '{{ item.value }}'
+      create: true
+      mode: 384
+    with_items:
+    - section: sssd
+      option: domains
+      value: default
+    - section: domain/default
+      option: id_provider
+      value: files
+    when:
+    - '"sssd-common" in ansible_facts.packages'
+    - test_grep_domain.stdout is defined
+    - test_grep_domain.stdout | length < 1
+    tags:
+    - CCE-90275-9
+    - PCI-DSS-Req-8.3
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_enable_smartcards
+
+  - name: Find all the conf files inside /etc/sssd/conf.d/
+    ansible.builtin.find:
+      paths: /etc/sssd/conf.d/
+      patterns: '*.conf'
+    register: sssd_conf_d_files
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90275-9
+    - PCI-DSS-Req-8.3
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_enable_smartcards
+
+  - name: Fix pam_cert_auth configuration in /etc/sssd/conf.d/
+    ansible.builtin.replace:
+      path: '{{ item.path }}'
+      regexp: '[^#]*pam_cert_auth.*'
+      replace: pam_cert_auth = True
+    with_items: '{{ sssd_conf_d_files.files }}'
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90275-9
+    - PCI-DSS-Req-8.3
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_enable_smartcards
+
+  - name: Enable Smartcards in SSSD - Check if system relies on authselect
+    ansible.builtin.stat:
+      path: /usr/bin/authselect
+    register: result_authselect_present
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90275-9
+    - PCI-DSS-Req-8.3
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_enable_smartcards
+
+  - name: Test for domain group
+    ansible.builtin.command: grep '\s*\[domain\/[^]]*]' /etc/sssd/sssd.conf
+    register: test_grep_domain
+    failed_when: false
+    changed_when: false
+    check_mode: false
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90741-0
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-5(13)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_offline_cred_expiration
+
+  - name: Add default domain group (if no domain there)
+    community.general.ini_file:
+      path: /etc/sssd/sssd.conf
+      section: '{{ item.section }}'
+      option: '{{ item.option }}'
+      value: '{{ item.value }}'
+      create: true
+      mode: 384
+    with_items:
+    - section: sssd
+      option: domains
+      value: default
+    - section: domain/default
+      option: id_provider
+      value: files
+    when:
+    - '"sssd-common" in ansible_facts.packages'
+    - test_grep_domain.stdout is defined
+    - test_grep_domain.stdout | length < 1
+    tags:
+    - CCE-90741-0
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-5(13)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_offline_cred_expiration
+
+  - name: Find all the conf files inside /etc/sssd/conf.d/
+    ansible.builtin.find:
+      paths: /etc/sssd/conf.d/
+      patterns: '*.conf'
+    register: sssd_conf_d_files
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90741-0
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-5(13)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_offline_cred_expiration
+
+  - name: Fix offline_credentials_expiration configuration in /etc/sssd/conf.d/
+    ansible.builtin.replace:
+      path: '{{ item.path }}'
+      regexp: '[^#]*offline_credentials_expiration.*'
+      replace: offline_credentials_expiration = 1
+    with_items: '{{ sssd_conf_d_files.files }}'
+    when: '"sssd-common" in ansible_facts.packages'
+    tags:
+    - CCE-90741-0
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-5(13)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - sssd_offline_cred_expiration

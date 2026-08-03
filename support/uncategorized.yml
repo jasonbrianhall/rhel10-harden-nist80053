@@ -1,0 +1,4350 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: uncategorized
+# Tasks that didn't match any functional-area keyword; review manually.
+#
+# 236 tasks total, 7 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook uncategorized.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook uncategorized.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    var_system_crypto_policy: FIPS
+  tasks:
+  - name: Gather list of packages
+    ansible.builtin.package_facts:
+      manager: auto
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89640-7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_verify_acls
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Gather list of packages
+    ansible.builtin.package_facts:
+      manager: auto
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89625-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_verify_ext_attributes
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Set the file_audit_tools_group_ownership_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_audit_tools_group_ownership_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/auditctl
+    ansible.builtin.stat:
+      path: /sbin/auditctl
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /sbin/auditctl
+    ansible.builtin.file:
+      path: /sbin/auditctl
+      follow: false
+      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/aureport
+    ansible.builtin.stat:
+      path: /sbin/aureport
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /sbin/aureport
+    ansible.builtin.file:
+      path: /sbin/aureport
+      follow: false
+      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/ausearch
+    ansible.builtin.stat:
+      path: /sbin/ausearch
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /sbin/ausearch
+    ansible.builtin.file:
+      path: /sbin/ausearch
+      follow: false
+      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/autrace
+    ansible.builtin.stat:
+      path: /sbin/autrace
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /sbin/autrace
+    ansible.builtin.file:
+      path: /sbin/autrace
+      follow: false
+      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/augenrules
+    ansible.builtin.stat:
+      path: /sbin/augenrules
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /sbin/augenrules
+    ansible.builtin.file:
+      path: /sbin/augenrules
+      follow: false
+      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86839-8
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_group_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_audit_tools_ownership_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_audit_tools_ownership_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/auditctl
+    ansible.builtin.stat:
+      path: /sbin/auditctl
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /sbin/auditctl
+    ansible.builtin.file:
+      path: /sbin/auditctl
+      follow: false
+      owner: '{{ file_audit_tools_ownership_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/aureport
+    ansible.builtin.stat:
+      path: /sbin/aureport
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /sbin/aureport
+    ansible.builtin.file:
+      path: /sbin/aureport
+      follow: false
+      owner: '{{ file_audit_tools_ownership_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/ausearch
+    ansible.builtin.stat:
+      path: /sbin/ausearch
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /sbin/ausearch
+    ansible.builtin.file:
+      path: /sbin/ausearch
+      follow: false
+      owner: '{{ file_audit_tools_ownership_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/autrace
+    ansible.builtin.stat:
+      path: /sbin/autrace
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /sbin/autrace
+    ansible.builtin.file:
+      path: /sbin/autrace
+      follow: false
+      owner: '{{ file_audit_tools_ownership_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/augenrules
+    ansible.builtin.stat:
+      path: /sbin/augenrules
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /sbin/augenrules
+    ansible.builtin.file:
+      path: /sbin/augenrules
+      follow: false
+      owner: '{{ file_audit_tools_ownership_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-87874-4
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_ownership
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/auditctl
+    ansible.builtin.stat:
+      path: /sbin/auditctl
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-s,g-ws,o-wt on /sbin/auditctl
+    ansible.builtin.file:
+      path: /sbin/auditctl
+      mode: u-s,g-ws,o-wt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/aureport
+    ansible.builtin.stat:
+      path: /sbin/aureport
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-s,g-ws,o-wt on /sbin/aureport
+    ansible.builtin.file:
+      path: /sbin/aureport
+      mode: u-s,g-ws,o-wt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/ausearch
+    ansible.builtin.stat:
+      path: /sbin/ausearch
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-s,g-ws,o-wt on /sbin/ausearch
+    ansible.builtin.file:
+      path: /sbin/ausearch
+      mode: u-s,g-ws,o-wt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/autrace
+    ansible.builtin.stat:
+      path: /sbin/autrace
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-s,g-ws,o-wt on /sbin/autrace
+    ansible.builtin.file:
+      path: /sbin/autrace
+      mode: u-s,g-ws,o-wt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /sbin/augenrules
+    ansible.builtin.stat:
+      path: /sbin/augenrules
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-s,g-ws,o-wt on /sbin/augenrules
+    ansible.builtin.file:
+      path: /sbin/augenrules
+      mode: u-s,g-ws,o-wt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86578-2
+    - NIST-800-53-AU-9
+    - configure_strategy
+    - file_audit_tools_permissions
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure BIND to use System Crypto Policy - Check BIND configuration file exists
+    ansible.builtin.stat:
+      path: /etc/named.conf
+    register: bind_config_file
+    when: '"bind" in ansible_facts.packages'
+    tags:
+    - CCE-86874-5
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - configure_bind_crypto_policy
+    - configure_strategy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure BIND to use System Crypto Policy - Aborting remediation, file not found
+    ansible.builtin.debug:
+      msg: Aborting remediation as '/etc/named.conf' was not found.
+    when:
+    - '"bind" in ansible_facts.packages'
+    - not bind_config_file.stat.exists
+    tags:
+    - CCE-86874-5
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - configure_bind_crypto_policy
+    - configure_strategy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure BIND to use System Crypto Policy - Insert crypto-policy into BIND config
+    ansible.builtin.lineinfile:
+      path: /etc/named.conf
+      insertafter: ^\s*options\s*{
+      line: ' include "/etc/crypto-policies/back-ends/bind.config";'
+      state: present
+    when:
+    - '"bind" in ansible_facts.packages'
+    - bind_config_file.stat.exists
+    tags:
+    - CCE-86874-5
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - configure_bind_crypto_policy
+    - configure_strategy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure System Cryptography Policy - Check current crypto policy (runtime)
+    ansible.builtin.command: /usr/bin/update-crypto-policies --show
+    register: current_crypto_policy
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-89085-5
+    - NIST-800-53-AC-17(2)
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MA-4(6)
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.7
+    - configure_crypto_policy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - dangerous
+
+  - name: Configure System Cryptography Policy - Get mtime of /etc/crypto-policies/config
+    ansible.builtin.stat:
+      path: /etc/crypto-policies/config
+    register: config_file_stat
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-89085-5
+    - NIST-800-53-AC-17(2)
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MA-4(6)
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.7
+    - configure_crypto_policy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Configure System Cryptography Policy - Get mtime of /etc/crypto-policies/state/current
+    ansible.builtin.stat:
+      path: /etc/crypto-policies/state/current
+    register: current_file_stat
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-89085-5
+    - NIST-800-53-AC-17(2)
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MA-4(6)
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.7
+    - configure_crypto_policy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Configure System Cryptography Policy - Check existence of /etc/crypto-policies/back-ends/nss.config
+    ansible.builtin.stat:
+      path: /etc/crypto-policies/back-ends/nss.config
+    register: nss_config_stat
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-89085-5
+    - NIST-800-53-AC-17(2)
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MA-4(6)
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.7
+    - configure_crypto_policy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure System Cryptography Policy - Verify that Crypto Policy is Set (runtime)
+    ansible.builtin.command: /usr/bin/update-crypto-policies --set {{ var_system_crypto_policy }}
+    when: (current_crypto_policy.stdout.strip() != var_system_crypto_policy) or (config_file_stat.stat.exists and current_file_stat.stat.exists and config_file_stat.stat.mtime > current_file_stat.stat.mtime) or (not nss_config_stat.stat.exists)
+    tags:
+    - CCE-89085-5
+    - NIST-800-53-AC-17(2)
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MA-4(6)
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.7
+    - configure_crypto_policy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure Kerberos to use System Crypto Policy
+    ansible.builtin.file:
+      src: /etc/crypto-policies/back-ends/krb5.config
+      path: /etc/krb5.conf.d/crypto-policies
+      state: link
+    when: '"krb5-libs" in ansible_facts.packages'
+    tags:
+    - CCE-88640-8
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - configure_kerberos_crypto_policy
+    - configure_strategy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure Libreswan to use System Crypto Policy
+    ansible.builtin.lineinfile:
+      path: /etc/ipsec.conf
+      line: include /etc/crypto-policies/back-ends/libreswan.config
+      create: true
+    when: ( "libreswan" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    tags:
+    - CCE-88687-9
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MA-4(6)
+    - NIST-800-53-SC-12(2)
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SC-13
+    - PCI-DSS-Req-2.2
+    - configure_libreswan_crypto_policy
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - dangerous
+
+  - name: Ensure GPG check is globally activated
+    community.general.ini_file:
+      dest: /etc/dnf/dnf.conf
+      section: main
+      option: gpgcheck
+      value: 1
+      no_extra_spaces: true
+      create: false
+    when: '"dnf" in ansible_facts.packages'
+    tags:
+    - CCE-88404-9
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-11(a)
+    - NIST-800-53-CM-11(b)
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SA-12
+    - NIST-800-53-SA-12(10)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - configure_strategy
+    - ensure_gpgcheck_globally_activated
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+
+  - name: Ensure GPG check Enabled for Local Packages (dnf)
+    block:
+    - name: Check stats of dnf
+      ansible.builtin.stat:
+        path: /etc/dnf/dnf.conf
+      register: pkg
+    - name: Check if config file of dnf is a symlink
+      ansible.builtin.set_fact:
+        pkg_config_file_symlink: '{{ pkg.stat.lnk_target if pkg.stat.lnk_target is match("^/.*") else "/etc/dnf/dnf.conf" | dirname ~ "/" ~ pkg.stat.lnk_target }}'
+      when: pkg.stat.lnk_target is defined
+    - name: Ensure GPG check Enabled for Local Packages (dnf)
+      community.general.ini_file:
+        dest: '{{ pkg_config_file_symlink |  default("/etc/dnf/dnf.conf") }}'
+        section: main
+        option: localpkg_gpgcheck
+        value: 1
+        no_extra_spaces: true
+        create: true
+    when: '"dnf" in ansible_facts.packages'
+    tags:
+    - CCE-89409-7
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-11(a)
+    - NIST-800-53-CM-11(b)
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SA-12
+    - NIST-800-53-SA-12(10)
+    - ensure_gpgcheck_local_packages
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Grep for dnf repo section names
+    ansible.builtin.shell: 'set -o pipefail
+
+      grep -HEr ''^\[.+\]'' -r /etc/yum.repos.d/
+
+      '
+    register: repo_grep_results
+    failed_when: repo_grep_results.rc not in [0, 1]
+    changed_when: false
+    tags:
+    - CCE-88176-3
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-11(a)
+    - NIST-800-53-CM-11(b)
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SA-12
+    - NIST-800-53-SA-12(10)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - enable_strategy
+    - ensure_gpgcheck_never_disabled
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+
+  - name: Set gpgcheck=1 for each dnf repo
+    community.general.ini_file:
+      path: '{{ item[0] }}'
+      section: '{{ item[1] }}'
+      option: gpgcheck
+      value: '1'
+      no_extra_spaces: true
+    loop: '{{ repo_grep_results.stdout |regex_findall( ''(.+\.repo):\[(.+)\]\n?'' ) if repo_grep_results is not skipped else [] }}'
+    when: repo_grep_results is not skipped
+    tags:
+    - CCE-88176-3
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-11(a)
+    - NIST-800-53-CM-11(b)
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SA-12
+    - NIST-800-53-SA-12(10)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - enable_strategy
+    - ensure_gpgcheck_never_disabled
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+
+  - name: 'Ensure Red Hat GPG Key Installed: Set Fact - Installed GPG Fingerprints (sq format)'
+    ansible.builtin.set_fact:
+      gpg_installed_fingerprints: '{{ sq_fingerprints.stdout | regex_findall(''Fingerprint:\s*([0-9A-Fa-f]+)'', ''\1'') | list }}'
+    when: ansible_distribution_version is version('10.1', '>=')
+    tags:
+    - CCE-88256-3
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - ensure_redhat_gpgkey_installed
+    - high_severity
+    - medium_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: 'Ensure Red Hat GPG Key Installed: Set Fact - Installed GPG Fingerprints (gpg format)'
+    ansible.builtin.set_fact:
+      gpg_installed_fingerprints: '{{ gpg_fingerprints.stdout | regex_findall(''^pub.*\n(?:^fpr[:]*)([0-9A-Fa-f]*)'', ''\1'') | list }}'
+    when: ansible_distribution_version is version('10.1', '<')
+    tags:
+    - CCE-88256-3
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - ensure_redhat_gpgkey_installed
+    - high_severity
+    - medium_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: 'Ensure Red Hat GPG Key Installed: Set Fact - Valid fingerprints (without PQC)'
+    ansible.builtin.set_fact:
+      gpg_valid_fingerprints:
+      - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+      - 7E4624258C406535D56D6F135054E4A45A6340B3
+    when: ansible_distribution_version is version('10.1', '<')
+    tags:
+    - CCE-88256-3
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - ensure_redhat_gpgkey_installed
+    - high_severity
+    - medium_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: 'Ensure Red Hat GPG Key Installed: Set Fact - Valid fingerprints (with PQC)'
+    ansible.builtin.set_fact:
+      gpg_valid_fingerprints:
+      - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+      - 7E4624258C406535D56D6F135054E4A45A6340B3
+      - FCD355B305707A62DA143AB6E422397E50FE8467A2A95343D246D6276AFEDF8F
+    when: ansible_distribution_version is version('10.1', '>=')
+    tags:
+    - CCE-88256-3
+    - CJIS-5.10.4.1
+    - NIST-800-171-3.4.8
+    - NIST-800-53-CM-5(3)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-12
+    - NIST-800-53-SC-12(3)
+    - NIST-800-53-SI-7
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-6.3
+    - PCI-DSSv4-6.3.3
+    - ensure_redhat_gpgkey_installed
+    - high_severity
+    - medium_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Require Authentication for Single User Mode - set files containing ExecStart overrides as target
+    ansible.builtin.set_fact:
+      rescue_service_remediation_target_file: '{{ rescue_service_overrides_found.files | map(attribute=''path'') | list }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - rescue_service_overrides_found.matched is defined and rescue_service_overrides_found.matched > 0
+    tags:
+    - CCE-90014-2
+    - NIST-800-171-3.1.1
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-3
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-2
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - require_singleuser_auth
+    - restrict_strategy
+
+  - name: Check existence of opensc conf
+    ansible.builtin.stat:
+      path: /etc/opensc-{{ ansible_architecture }}.conf
+    register: opensc_conf_cd
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90065-4
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-IA-2(1)
+    - NIST-800-53-IA-2(11)
+    - NIST-800-53-IA-2(2)
+    - NIST-800-53-IA-2(3)
+    - NIST-800-53-IA-2(4)
+    - NIST-800-53-IA-2(6)
+    - NIST-800-53-IA-2(7)
+    - PCI-DSS-Req-8.3
+    - configure_opensc_card_drivers
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Create local_users variable from the getent output
+    ansible.builtin.set_fact:
+      local_users: '{{ ansible_facts.getent_passwd|dict2items }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89933-6
+    - accounts_user_interactive_home_directory_defined
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure interactive users have an exclusive home directory defined
+    ansible.builtin.user:
+      name: '{{ item.key }}'
+      home: /home/{{ item.key }}
+      create_home: false
+    loop: '{{ local_users }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - item.value[2]|int >= 1000
+    - item.value[2]|int != 65534
+    - item.value[2]|int < 61184 or item.value[2]|int > 65519
+    - not item.value[4] | regex_search('^\/\w*\/\w{1,}')
+    tags:
+    - CCE-89933-6
+    - accounts_user_interactive_home_directory_defined
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Create local_users variable from the getent output
+    ansible.builtin.set_fact:
+      local_users: '{{ ansible_facts.getent_passwd|dict2items }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86659-0
+    - accounts_user_interactive_home_directory_exists
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure interactive users have a home directory exists
+    ansible.builtin.user:
+      name: '{{ item.key }}'
+      create_home: true
+    loop: '{{ local_users }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - item.value[1]|int >= 1000
+    - item.value[1]|int != 65534
+    tags:
+    - CCE-86659-0
+    - accounts_user_interactive_home_directory_exists
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Create local_users variable from the getent output
+    ansible.builtin.set_fact:
+      local_users: '{{ ansible_facts.getent_passwd|dict2items }}'
+    tags:
+    - CCE-87946-0
+    - file_groupownership_home_directories
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Test for existence of home directories to avoid creating them, but only fixing group ownership
+    ansible.builtin.stat:
+      path: '{{ item.value[4] }}'
+    register: path_exists
+    loop: '{{ local_users }}'
+    when:
+    - item.value[1]|int >= 1000
+    - item.value[1]|int != 65534
+    tags:
+    - CCE-87946-0
+    - file_groupownership_home_directories
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure interactive local users are the group-owners of their respective home directories
+    ansible.builtin.file:
+      path: '{{ item.0.value[4] }}'
+      group: '{{ item.0.value[2] }}'
+    loop: '{{ local_users|zip(path_exists.results)|list }}'
+    when: item.1.stat is defined and item.1.stat.exists
+    tags:
+    - CCE-87946-0
+    - file_groupownership_home_directories
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Create local_users variable from the getent output
+    ansible.builtin.set_fact:
+      local_users: '{{ ansible_facts.getent_passwd|dict2items }}'
+    tags:
+    - CCE-86605-3
+    - file_permissions_home_directories
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Test for existence home directories to avoid creating them.
+    ansible.builtin.stat:
+      path: '{{ item.value[4] }}'
+    register: path_exists
+    loop: '{{ local_users }}'
+    when:
+    - item.value[1]|int >= 1000
+    - item.value[1]|int != 65534
+    - item.value[4] != "/"
+    tags:
+    - CCE-86605-3
+    - file_permissions_home_directories
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure System is Not Acting as a Network Sniffer - Gather network interfaces
+    ansible.builtin.command:
+      cmd: ip -o link show
+    register: network_interfaces
+    when: ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+    tags:
+    - CCE-88985-7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(2)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MA-3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - network_sniffer_disabled
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure System is Not Acting as a Network Sniffer - Disable promiscuous mode
+    ansible.builtin.command:
+      cmd: ip link set dev {{ (item.split(':')[1] | trim).split('@')[0] }} multicast off promisc off
+    loop: '{{ network_interfaces.stdout_lines }}'
+    when:
+    - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+    - network_interfaces.stdout_lines is defined and item.split(':') | length >= 3
+    tags:
+    - CCE-88985-7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(2)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MA-3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - network_sniffer_disabled
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Enable Kernel Parameter to Enforce DAC on Hardlinks - Find all files that contain fs.protected_hardlinks
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*fs.protected_hardlinks\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86689-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_hardlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Hardlinks - Find all files that set fs.protected_hardlinks to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*fs.protected_hardlinks\s*=\s*1$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86689-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_hardlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Hardlinks - Comment out any occurrences of fs.protected_hardlinks from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*fs.protected_hardlinks
+      replace: '#fs.protected_hardlinks'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-86689-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_hardlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Symlinks - Find all files that contain fs.protected_symlinks
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*fs.protected_symlinks\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88796-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_symlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Symlinks - Find all files that set fs.protected_symlinks to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*fs.protected_symlinks\s*=\s*1$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88796-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_symlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Symlinks - Comment out any occurrences of fs.protected_symlinks from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*fs.protected_symlinks
+      replace: '#fs.protected_symlinks'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-88796-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_symlinks
+
+  - name: Set the file_groupowner_backup_etc_group_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_backup_etc_group_newgroup: '0'
+    tags:
+    - CCE-89477-4
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/group-
+    ansible.builtin.stat:
+      path: /etc/group-
+    register: file_exists
+    tags:
+    - CCE-89477-4
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/group-
+    ansible.builtin.file:
+      path: /etc/group-
+      follow: false
+      group: '{{ file_groupowner_backup_etc_group_newgroup }}'
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89477-4
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_backup_etc_passwd_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_backup_etc_passwd_newgroup: '0'
+    tags:
+    - CCE-89914-6
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_backup_etc_passwd
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_etc_group_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_etc_group_newgroup: '0'
+    tags:
+    - CCE-90261-9
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/group
+    ansible.builtin.stat:
+      path: /etc/group
+    register: file_exists
+    tags:
+    - CCE-90261-9
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/group
+    ansible.builtin.file:
+      path: /etc/group
+      follow: false
+      group: '{{ file_groupowner_etc_group_newgroup }}'
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-90261-9
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_etc_passwd_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_etc_passwd_newgroup: '0'
+    tags:
+    - CCE-89210-9
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_etc_passwd
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_backup_etc_group_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_backup_etc_group_newown: '0'
+    tags:
+    - CCE-89017-8
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/group-
+    ansible.builtin.stat:
+      path: /etc/group-
+    register: file_exists
+    tags:
+    - CCE-89017-8
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /etc/group-
+    ansible.builtin.file:
+      path: /etc/group-
+      follow: false
+      owner: '{{ file_owner_backup_etc_group_newown }}'
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89017-8
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_backup_etc_passwd_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_backup_etc_passwd_newown: '0'
+    tags:
+    - CCE-90377-3
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_backup_etc_passwd
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_etc_group_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_etc_group_newown: '0'
+    tags:
+    - CCE-86870-3
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/group
+    ansible.builtin.stat:
+      path: /etc/group
+    register: file_exists
+    tags:
+    - CCE-86870-3
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /etc/group
+    ansible.builtin.file:
+      path: /etc/group
+      follow: false
+      owner: '{{ file_owner_etc_group_newown }}'
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86870-3
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_etc_passwd_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_etc_passwd_newown: '0'
+    tags:
+    - CCE-87827-2
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_etc_passwd
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/group-
+    ansible.builtin.stat:
+      path: /etc/group-
+    register: file_exists
+    tags:
+    - CCE-86579-0
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-xs,g-xws,o-xwt on /etc/group-
+    ansible.builtin.file:
+      path: /etc/group-
+      mode: u-xs,g-xws,o-xwt
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86579-0
+    - NIST-800-53-AC-6 (1)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_backup_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/group
+    ansible.builtin.stat:
+      path: /etc/group
+    register: file_exists
+    tags:
+    - CCE-88868-5
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-xs,g-xws,o-xwt on /etc/group
+    ansible.builtin.file:
+      path: /etc/group
+      mode: u-xs,g-xws,o-xwt
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-88868-5
+    - CJIS-5.5.2.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.7.c
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_etc_group
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_var_log_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_var_log_newgroup: '0'
+    tags:
+    - CCE-89035-0
+    - configure_strategy
+    - file_groupowner_var_log
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /var/log/
+    ansible.builtin.file:
+      path: /var/log/
+      follow: false
+      state: directory
+      group: '{{ file_groupowner_var_log_newgroup }}'
+    tags:
+    - CCE-89035-0
+    - configure_strategy
+    - file_groupowner_var_log
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_var_log_messages_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_var_log_messages_newgroup: '0'
+    tags:
+    - CCE-86924-8
+    - configure_strategy
+    - file_groupowner_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /var/log/messages
+    ansible.builtin.stat:
+      path: /var/log/messages
+    register: file_exists
+    tags:
+    - CCE-86924-8
+    - configure_strategy
+    - file_groupowner_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /var/log/messages
+    ansible.builtin.file:
+      path: /var/log/messages
+      follow: false
+      group: '{{ file_groupowner_var_log_messages_newgroup }}'
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86924-8
+    - configure_strategy
+    - file_groupowner_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_var_log_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_var_log_newown: '0'
+    tags:
+    - CCE-86705-1
+    - configure_strategy
+    - file_owner_var_log
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /var/log/
+    ansible.builtin.file:
+      path: /var/log/
+      follow: false
+      state: directory
+      owner: '{{ file_owner_var_log_newown }}'
+    tags:
+    - CCE-86705-1
+    - configure_strategy
+    - file_owner_var_log
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_var_log_messages_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_var_log_messages_newown: '0'
+    tags:
+    - CCE-89093-9
+    - configure_strategy
+    - file_owner_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /var/log/messages
+    ansible.builtin.stat:
+      path: /var/log/messages
+    register: file_exists
+    tags:
+    - CCE-89093-9
+    - configure_strategy
+    - file_owner_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /var/log/messages
+    ansible.builtin.file:
+      path: /var/log/messages
+      follow: false
+      owner: '{{ file_owner_var_log_messages_newown }}'
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89093-9
+    - configure_strategy
+    - file_owner_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /var/log/ file(s)
+    ansible.builtin.command: 'find -P /var/log/ -maxdepth 0 -perm /u+s,g+ws,o+wt  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-89801-5
+    - configure_strategy
+    - file_permissions_var_log
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /var/log/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-s,g-ws,o-wt
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-89801-5
+    - configure_strategy
+    - file_permissions_var_log
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /var/log/messages
+    ansible.builtin.stat:
+      path: /var/log/messages
+    register: file_exists
+    tags:
+    - CCE-89397-4
+    - configure_strategy
+    - file_permissions_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-xs,g-xwrs,o-xwrt on /var/log/messages
+    ansible.builtin.file:
+      path: /var/log/messages
+      mode: u-xs,g-xwrs,o-xwrt
+    when: file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89397-4
+    - configure_strategy
+    - file_permissions_var_log_messages
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the dir_group_ownership_library_dirs_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      dir_group_ownership_library_dirs_newgroup: '0'
+    tags:
+    - CCE-88290-2
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_group_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /lib/ recursively
+    ansible.builtin.file:
+      path: /lib/
+      follow: false
+      state: directory
+      recurse: true
+      group: '{{ dir_group_ownership_library_dirs_newgroup }}'
+    tags:
+    - CCE-88290-2
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_group_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /lib64/ recursively
+    ansible.builtin.file:
+      path: /lib64/
+      follow: false
+      state: directory
+      recurse: true
+      group: '{{ dir_group_ownership_library_dirs_newgroup }}'
+    tags:
+    - CCE-88290-2
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_group_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /usr/lib/ recursively
+    ansible.builtin.file:
+      path: /usr/lib/
+      follow: false
+      state: directory
+      recurse: true
+      group: '{{ dir_group_ownership_library_dirs_newgroup }}'
+    tags:
+    - CCE-88290-2
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_group_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /usr/lib64/ recursively
+    ansible.builtin.file:
+      path: /usr/lib64/
+      follow: false
+      state: directory
+      recurse: true
+      group: '{{ dir_group_ownership_library_dirs_newgroup }}'
+    tags:
+    - CCE-88290-2
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_group_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the dir_ownership_library_dirs_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      dir_ownership_library_dirs_newown: '0'
+    tags:
+    - CCE-89745-4
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /lib/ recursively
+    ansible.builtin.file:
+      path: /lib/
+      follow: false
+      state: directory
+      recurse: true
+      owner: '{{ dir_ownership_library_dirs_newown }}'
+    tags:
+    - CCE-89745-4
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /lib64/ recursively
+    ansible.builtin.file:
+      path: /lib64/
+      follow: false
+      state: directory
+      recurse: true
+      owner: '{{ dir_ownership_library_dirs_newown }}'
+    tags:
+    - CCE-89745-4
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /usr/lib/ recursively
+    ansible.builtin.file:
+      path: /usr/lib/
+      follow: false
+      state: directory
+      recurse: true
+      owner: '{{ dir_ownership_library_dirs_newown }}'
+    tags:
+    - CCE-89745-4
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /usr/lib64/ recursively
+    ansible.builtin.file:
+      path: /usr/lib64/
+      follow: false
+      state: directory
+      recurse: true
+      owner: '{{ dir_ownership_library_dirs_newown }}'
+    tags:
+    - CCE-89745-4
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /lib/ file(s) recursively
+    ansible.builtin.command: 'find -P /lib/  -perm /g+w,o+w  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /lib/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /lib64/ file(s) recursively
+    ansible.builtin.command: 'find -P /lib64/  -perm /g+w,o+w  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /lib64/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /usr/lib/ file(s) recursively
+    ansible.builtin.command: 'find -P /usr/lib/  -perm /g+w,o+w  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /usr/lib/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /usr/lib64/ file(s) recursively
+    ansible.builtin.command: 'find -P /usr/lib64/  -perm /g+w,o+w  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /usr/lib64/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87731-6
+    - NIST-800-53-CM-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - dir_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Read list of system executables without root ownership
+    ansible.builtin.command: find /bin/ /usr/bin/ /usr/local/bin/ /sbin/ /usr/sbin/ /usr/local/sbin/ /usr/libexec \! -user root
+    register: no_root_system_executables
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-89620-9
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - file_ownership_binary_dirs
+    - medium_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Set ownership to root of system executables
+    ansible.builtin.file:
+      path: '{{ item }}'
+      owner: root
+    with_items: '{{ no_root_system_executables.stdout_lines }}'
+    when: no_root_system_executables.stdout_lines | length > 0
+    tags:
+    - CCE-89620-9
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - file_ownership_binary_dirs
+    - medium_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Set the file_ownership_library_dirs_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_ownership_library_dirs_newown: '0'
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /lib/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /lib/  -type f  ! -user 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /lib/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      owner: '{{ file_ownership_library_dirs_newown }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /lib64/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /lib64/  -type f  ! -user 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /lib64/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      owner: '{{ file_ownership_library_dirs_newown }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /usr/lib/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /usr/lib/  -type f  ! -user 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /usr/lib/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      owner: '{{ file_ownership_library_dirs_newown }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /usr/lib64/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /usr/lib64/  -type f  ! -user 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /usr/lib64/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      owner: '{{ file_ownership_library_dirs_newown }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-87988-2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_ownership_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /lib/ file(s) recursively
+    ansible.builtin.command: find -P /lib/  -perm /g+w,o+w  -type f -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /lib/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /lib64/ file(s) recursively
+    ansible.builtin.command: find -P /lib64/  -perm /g+w,o+w  -type f -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /lib64/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /usr/lib/ file(s) recursively
+    ansible.builtin.command: find -P /usr/lib/  -perm /g+w,o+w  -type f -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /usr/lib/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /usr/lib64/ file(s) recursively
+    ansible.builtin.command: find -P /usr/lib64/  -perm /g+w,o+w  -type f -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /usr/lib64/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: g-w,o-w
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-88771-1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - file_permissions_library_dirs
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the root_permissions_syslibrary_files_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      root_permissions_syslibrary_files_newgroup: '0'
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Find /lib/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /lib/  -type f  ! -group 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Ensure group owner on /lib/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      group: '{{ root_permissions_syslibrary_files_newgroup }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Find /lib64/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /lib64/  -type f  ! -group 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Ensure group owner on /lib64/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      group: '{{ root_permissions_syslibrary_files_newgroup }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Find /usr/lib/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /usr/lib/  -type f  ! -group 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Ensure group owner on /usr/lib/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      group: '{{ root_permissions_syslibrary_files_newgroup }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Find /usr/lib64/ file(s) matching ^.*\.so.*$ recursively
+    ansible.builtin.command: find -P /usr/lib64/  -type f  ! -group 0 -regextype posix-extended -regex "^.*\.so.*$"
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Ensure group owner on /usr/lib64/ file(s) matching ^.*\.so.*$
+    ansible.builtin.file:
+      path: '{{ item }}'
+      follow: false
+      group: '{{ root_permissions_syslibrary_files_newgroup }}'
+      state: file
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    tags:
+    - CCE-86440-5
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - root_permissions_syslibrary_files
+
+  - name: Restrict Access to Kernel Message Buffer - Find all files that contain kernel.dmesg_restrict
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.dmesg_restrict\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89000-4
+    - NIST-800-171-3.1.5
+    - NIST-800-53-SI-11(a)
+    - NIST-800-53-SI-11(b)
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_dmesg_restrict
+
+  - name: Restrict Access to Kernel Message Buffer - Find all files that set kernel.dmesg_restrict to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.dmesg_restrict\s*=\s*1$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89000-4
+    - NIST-800-171-3.1.5
+    - NIST-800-53-SI-11(a)
+    - NIST-800-53-SI-11(b)
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_dmesg_restrict
+
+  - name: Restrict Access to Kernel Message Buffer - Comment out any occurrences of kernel.dmesg_restrict from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.dmesg_restrict
+      replace: '#kernel.dmesg_restrict'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-89000-4
+    - NIST-800-171-3.1.5
+    - NIST-800-53-SI-11(a)
+    - NIST-800-53-SI-11(b)
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_dmesg_restrict
+
+  - name: Disable Kernel Image Loading - Find all files that contain kernel.kexec_load_disabled
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.kexec_load_disabled\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89232-3
+    - NIST-800-53-CM-6
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kexec_load_disabled
+
+  - name: Disable Kernel Image Loading - Find all files that set kernel.kexec_load_disabled to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.kexec_load_disabled\s*=\s*1$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89232-3
+    - NIST-800-53-CM-6
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kexec_load_disabled
+
+  - name: Disable Kernel Image Loading - Comment out any occurrences of kernel.kexec_load_disabled from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.kexec_load_disabled
+      replace: '#kernel.kexec_load_disabled'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-89232-3
+    - NIST-800-53-CM-6
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kexec_load_disabled
+
+  - name: Disallow kernel profiling by unprivileged users - Find all files that contain kernel.perf_event_paranoid
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.perf_event_paranoid\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90142-1
+    - NIST-800-53-AC-6
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_perf_event_paranoid
+
+  - name: Disallow kernel profiling by unprivileged users - Find all files that set kernel.perf_event_paranoid to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.perf_event_paranoid\s*=\s*2$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90142-1
+    - NIST-800-53-AC-6
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_perf_event_paranoid
+
+  - name: Disallow kernel profiling by unprivileged users - Comment out any occurrences of kernel.perf_event_paranoid from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.perf_event_paranoid
+      replace: '#kernel.perf_event_paranoid'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-90142-1
+    - NIST-800-53-AC-6
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_perf_event_paranoid
+
+  - name: Disable Access to Network bpf() Syscall From Unprivileged Processes - Find all files that contain kernel.unprivileged_bpf_disabled
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.unprivileged_bpf_disabled\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89405-5
+    - NIST-800-53-AC-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_unprivileged_bpf_disabled
+
+  - name: Disable Access to Network bpf() Syscall From Unprivileged Processes - Find all files that set kernel.unprivileged_bpf_disabled to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.unprivileged_bpf_disabled\s*=\s*1$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89405-5
+    - NIST-800-53-AC-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_unprivileged_bpf_disabled
+
+  - name: Disable Access to Network bpf() Syscall From Unprivileged Processes - Comment out any occurrences of kernel.unprivileged_bpf_disabled from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.unprivileged_bpf_disabled
+      replace: '#kernel.unprivileged_bpf_disabled'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-89405-5
+    - NIST-800-53-AC-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_unprivileged_bpf_disabled
+
+  - name: Harden the operation of the BPF just-in-time compiler - Find all files that contain net.core.bpf_jit_harden
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*net.core.bpf_jit_harden\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89631-6
+    - NIST-800-53-CM-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_core_bpf_jit_harden
+
+  - name: Harden the operation of the BPF just-in-time compiler - Find all files that set net.core.bpf_jit_harden to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*net.core.bpf_jit_harden\s*=\s*2$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89631-6
+    - NIST-800-53-CM-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_core_bpf_jit_harden
+
+  - name: Harden the operation of the BPF just-in-time compiler - Comment out any occurrences of net.core.bpf_jit_harden from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*net.core.bpf_jit_harden
+      replace: '#net.core.bpf_jit_harden'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-89631-6
+    - NIST-800-53-CM-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_core_bpf_jit_harden
+
+  - name: Enable Randomized Layout of Virtual Address Space - Find all files that contain kernel.randomize_va_space
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.randomize_va_space\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87876-9
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - PCI-DSS-Req-2.2.1
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_randomize_va_space
+
+  - name: Enable Randomized Layout of Virtual Address Space - Find all files that set kernel.randomize_va_space to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.randomize_va_space\s*=\s*2$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87876-9
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - PCI-DSS-Req-2.2.1
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_randomize_va_space
+
+  - name: Enable Randomized Layout of Virtual Address Space - Comment out any occurrences of kernel.randomize_va_space from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.randomize_va_space
+      replace: '#kernel.randomize_va_space'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-87876-9
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - PCI-DSS-Req-2.2.1
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_randomize_va_space
+
+  - name: Set the file_groupowner_cron_d_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_d_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89321-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_d
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.d/
+    ansible.builtin.file:
+      path: /etc/cron.d/
+      follow: false
+      state: directory
+      group: '{{ file_groupowner_cron_d_newgroup }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89321-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_d
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_cron_daily_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_daily_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90342-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_daily
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.daily/
+    ansible.builtin.file:
+      path: /etc/cron.daily/
+      follow: false
+      state: directory
+      group: '{{ file_groupowner_cron_daily_newgroup }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90342-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_daily
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_cron_deny_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_deny_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88060-9
+    - NIST-800-53-CM-6 b
+    - configure_strategy
+    - file_groupowner_cron_deny
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/cron.deny
+    ansible.builtin.stat:
+      path: /etc/cron.deny
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88060-9
+    - NIST-800-53-CM-6 b
+    - configure_strategy
+    - file_groupowner_cron_deny
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.deny
+    ansible.builtin.file:
+      path: /etc/cron.deny
+      follow: false
+      group: '{{ file_groupowner_cron_deny_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-88060-9
+    - NIST-800-53-CM-6 b
+    - configure_strategy
+    - file_groupowner_cron_deny
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_cron_hourly_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_hourly_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88140-9
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_hourly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.hourly/
+    ansible.builtin.file:
+      path: /etc/cron.hourly/
+      follow: false
+      state: directory
+      group: '{{ file_groupowner_cron_hourly_newgroup }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88140-9
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_hourly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_cron_monthly_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_monthly_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88986-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_monthly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.monthly/
+    ansible.builtin.file:
+      path: /etc/cron.monthly/
+      follow: false
+      state: directory
+      group: '{{ file_groupowner_cron_monthly_newgroup }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88986-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_monthly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_cron_weekly_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_weekly_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89080-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_weekly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.weekly/
+    ansible.builtin.file:
+      path: /etc/cron.weekly/
+      follow: false
+      state: directory
+      group: '{{ file_groupowner_cron_weekly_newgroup }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89080-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_weekly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_crontab_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_crontab_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89062-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/crontab
+    ansible.builtin.stat:
+      path: /etc/crontab
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89062-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/crontab
+    ansible.builtin.file:
+      path: /etc/crontab
+      follow: false
+      group: '{{ file_groupowner_crontab_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89062-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_d_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_d_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88741-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_d
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /etc/cron.d/
+    ansible.builtin.file:
+      path: /etc/cron.d/
+      follow: false
+      state: directory
+      owner: '{{ file_owner_cron_d_newown }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88741-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_d
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_daily_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_daily_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87499-0
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_daily
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /etc/cron.daily/
+    ansible.builtin.file:
+      path: /etc/cron.daily/
+      follow: false
+      state: directory
+      owner: '{{ file_owner_cron_daily_newown }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87499-0
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_daily
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_deny_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_deny_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86823-2
+    - NIST-800-53-CM-6 b
+    - configure_strategy
+    - file_owner_cron_deny
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/cron.deny
+    ansible.builtin.stat:
+      path: /etc/cron.deny
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86823-2
+    - NIST-800-53-CM-6 b
+    - configure_strategy
+    - file_owner_cron_deny
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /etc/cron.deny
+    ansible.builtin.file:
+      path: /etc/cron.deny
+      follow: false
+      owner: '{{ file_owner_cron_deny_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-86823-2
+    - NIST-800-53-CM-6 b
+    - configure_strategy
+    - file_owner_cron_deny
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_hourly_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_hourly_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89705-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_hourly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /etc/cron.hourly/
+    ansible.builtin.file:
+      path: /etc/cron.hourly/
+      follow: false
+      state: directory
+      owner: '{{ file_owner_cron_hourly_newown }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89705-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_hourly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_monthly_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_monthly_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90753-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_monthly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /etc/cron.monthly/
+    ansible.builtin.file:
+      path: /etc/cron.monthly/
+      follow: false
+      state: directory
+      owner: '{{ file_owner_cron_monthly_newown }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90753-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_monthly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_weekly_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_weekly_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88943-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_weekly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on directory /etc/cron.weekly/
+    ansible.builtin.file:
+      path: /etc/cron.weekly/
+      follow: false
+      state: directory
+      owner: '{{ file_owner_cron_weekly_newown }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88943-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_weekly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_crontab_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_crontab_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87294-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/crontab
+    ansible.builtin.stat:
+      path: /etc/crontab
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87294-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /etc/crontab
+    ansible.builtin.file:
+      path: /etc/crontab
+      follow: false
+      owner: '{{ file_owner_crontab_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-87294-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /etc/cron.d/ file(s)
+    ansible.builtin.command: 'find -P /etc/cron.d/ -maxdepth 0 -perm /u+s,g+xwrs,o+xwrt  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86651-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_d
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /etc/cron.d/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-s,g-xwrs,o-xwrt
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86651-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_d
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /etc/cron.daily/ file(s)
+    ansible.builtin.command: 'find -P /etc/cron.daily/ -maxdepth 0 -perm /u+s,g+xwrs,o+xwrt  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88919-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_daily
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /etc/cron.daily/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-s,g-xwrs,o-xwrt
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88919-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_daily
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /etc/cron.hourly/ file(s)
+    ansible.builtin.command: 'find -P /etc/cron.hourly/ -maxdepth 0 -perm /u+s,g+xwrs,o+xwrt  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88664-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_hourly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /etc/cron.hourly/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-s,g-xwrs,o-xwrt
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88664-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_hourly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /etc/cron.monthly/ file(s)
+    ansible.builtin.command: 'find -P /etc/cron.monthly/ -maxdepth 0 -perm /u+s,g+xwrs,o+xwrt  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86632-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_monthly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /etc/cron.monthly/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-s,g-xwrs,o-xwrt
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86632-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_monthly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Find /etc/cron.weekly/ file(s)
+    ansible.builtin.command: 'find -P /etc/cron.weekly/ -maxdepth 0 -perm /u+s,g+xwrs,o+xwrt  -type d '
+    register: files_found
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89733-0
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_weekly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set permissions for /etc/cron.weekly/ file(s)
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-s,g-xwrs,o-xwrt
+      state: directory
+    with_items:
+    - '{{ files_found.stdout_lines }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89733-0
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_weekly
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/crontab
+    ansible.builtin.stat:
+      path: /etc/crontab
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90078-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-xs,g-xwrs,o-xwrt on /etc/crontab
+    ansible.builtin.file:
+      path: /etc/crontab
+      mode: u-xs,g-xwrs,o-xwrt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-90078-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_crontab
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_groupowner_cron_allow_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_cron_allow_newgroup: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90094-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/cron.allow
+    ansible.builtin.stat:
+      path: /etc/cron.allow
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90094-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure group owner on /etc/cron.allow
+    ansible.builtin.file:
+      path: /etc/cron.allow
+      follow: false
+      group: '{{ file_groupowner_cron_allow_newgroup }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-90094-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Set the file_owner_cron_allow_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_cron_allow_newown: '0'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88914-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/cron.allow
+    ansible.builtin.stat:
+      path: /etc/cron.allow
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88914-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure owner on /etc/cron.allow
+    ansible.builtin.file:
+      path: /etc/cron.allow
+      follow: false
+      owner: '{{ file_owner_cron_allow_newown }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-88914-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Test for existence /etc/cron.allow
+    ansible.builtin.stat:
+      path: /etc/cron.allow
+    register: file_exists
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89121-8
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Ensure permission u-xs,g-xws,o-xwrt on /etc/cron.allow
+    ansible.builtin.file:
+      path: /etc/cron.allow
+      mode: u-xs,g-xws,o-xwrt
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89121-8
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_cron_allow
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  - name: Drop any security clause for every export
+    ansible.builtin.replace:
+      path: /etc/exports
+      regexp: ^(/.*\w+.*\(.*),sec=[^,]*(.*\)\w*$)
+      replace: \1\2
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90391-4
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-IA-2
+    - NIST-800-53-IA-2(8)
+    - NIST-800-53-IA-2(9)
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - use_kerberos_security_all_exports
+
+  - name: Add kerberos security when no security is defined for an export
+    ansible.builtin.replace:
+      path: /etc/exports
+      regexp: ^(/.*\w+.*\(.*)(\)\w*$)
+      replace: \1,sec=krb5:krb5i:krb5p\2
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90391-4
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-IA-2
+    - NIST-800-53-IA-2(8)
+    - NIST-800-53-IA-2(9)
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - use_kerberos_security_all_exports
+
+  - name: Remove Host-Based Authentication Files - Find Relevant Root Directories Ignoring Pre-Defined Excluded Paths
+    ansible.builtin.find:
+      paths: /
+      file_type: directory
+      excludes: '{{ excluded_paths }}'
+      hidden: true
+      recurse: false
+    register: result_relevant_root_dirs
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Include Relevant Root Directories in a List of Paths to be Searched
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.path]) }}'
+    loop: '{{ result_relevant_root_dirs.files }}'
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Define Rule Specific Facts
+    ansible.builtin.set_fact:
+      shosts_equiv_files:
+      - /shosts.equiv
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Find All shosts.equiv Files in Local File Systems
+    ansible.builtin.command:
+      cmd: find {{ item }} -xdev -type f -name "shosts.equiv"
+    loop: '{{ search_paths }}'
+    changed_when: false
+    register: result_found_shosts_equiv_files
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Create List of shosts.equiv Files Present in Local File Systems
+    ansible.builtin.set_fact:
+      shosts_equiv_files: '{{ shosts_equiv_files | union(item.stdout_lines) | list }}'
+    loop: '{{ result_found_shosts_equiv_files.results }}'
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Ensure No shosts.equiv Files Are Present in the System
+    ansible.builtin.file:
+      path: '{{ item }}'
+      state: absent
+    loop: '{{ shosts_equiv_files }}'
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Find Relevant Root Directories Ignoring Pre-Defined Excluded Paths
+    ansible.builtin.find:
+      paths: /
+      file_type: directory
+      excludes: '{{ excluded_paths }}'
+      hidden: true
+      recurse: false
+    register: result_relevant_root_dirs
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Include Relevant Root Directories in a List of Paths to be Searched
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.path]) }}'
+    loop: '{{ result_relevant_root_dirs.files }}'
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Define Rule Specific Facts
+    ansible.builtin.set_fact:
+      user_shosts_files:
+      - /.shosts
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Find All .shosts Files in Local File Systems
+    ansible.builtin.command:
+      cmd: find {{ item }} -xdev -type f -name ".shosts"
+    loop: '{{ search_paths }}'
+    changed_when: false
+    register: result_found_shosts_files
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Create List of .shosts Files Present in Local File Systems
+    ansible.builtin.set_fact:
+      user_shosts_files: '{{ user_shosts_files | union(item.stdout_lines) | list }}'
+    loop: '{{ result_found_shosts_files.results }}'
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Ensure No .shosts Files Are Present in the System
+    ansible.builtin.file:
+      path: '{{ item }}'
+      state: absent
+    loop: '{{ user_shosts_files }}'
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Set permissions for root:root-owned keys
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: u-xs,g-xwrs,o-xwrt
+      state: file
+    with_items:
+    - '{{ root_owned_keys.stdout_lines }}'
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88018-7
+    - NIST-800-171-3.1.13
+    - NIST-800-171-3.13.10
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-2.2.4
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_sshd_private_key
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed

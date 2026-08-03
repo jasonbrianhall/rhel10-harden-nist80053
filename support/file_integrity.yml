@@ -1,0 +1,560 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: file_integrity
+# AIDE file integrity monitoring.
+#
+# 28 tasks total, 3 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook file_integrity.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook file_integrity.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    var_aide_scan_notification_email: root@localhost
+  tasks:
+  - name: Build and Test AIDE Database - Check Whether the Stock AIDE Database Exists
+    ansible.builtin.stat:
+      path: /var/lib/aide/aide.db.new.gz
+    register: aide_database_stat
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86942-0
+    - CJIS-5.10.1.3
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-11.5
+    - PCI-DSSv4-11.5.2
+    - aide_build_database
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Build and Test AIDE Database - Build and Test AIDE Database
+    ansible.builtin.command: /usr/sbin/aide --init
+    changed_when: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - not (aide_database_stat.stat.exists is defined and aide_database_stat.stat.exists)
+    register: aide_database_init
+    tags:
+    - CCE-86942-0
+    - CJIS-5.10.1.3
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-11.5
+    - PCI-DSSv4-11.5.2
+    - aide_build_database
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Build and Test AIDE Database - Stage AIDE Database
+    ansible.builtin.copy:
+      src: /var/lib/aide/aide.db.new.gz
+      dest: /var/lib/aide/aide.db.gz
+      backup: true
+      remote_src: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - aide_database_init is changed
+    - not ansible_check_mode
+    tags:
+    - CCE-86942-0
+    - CJIS-5.10.1.3
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-11.5
+    - PCI-DSSv4-11.5.2
+    - aide_build_database
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Configure Periodic Execution of AIDE - Gather List of Installed Packages
+    ansible.builtin.package_facts:
+      manager: auto
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86738-2
+    - CJIS-5.10.1.3
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - PCI-DSS-Req-11.5
+    - PCI-DSSv4-11.5.2
+    - aide_periodic_cron_checking
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Configure Periodic Execution of AIDE - Setup Cron Tab
+    ansible.builtin.cron:
+      name: run AIDE check
+      minute: 5
+      hour: 4
+      user: root
+      job: /usr/sbin/aide --check
+    register: crontab_check
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '''cronie'' in ansible_facts.packages'
+    tags:
+    - CCE-86738-2
+    - CJIS-5.10.1.3
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - PCI-DSS-Req-11.5
+    - PCI-DSSv4-11.5.2
+    - aide_periodic_cron_checking
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Configure Notification of Post-AIDE Scan Details - Setup Cron Tab
+    ansible.builtin.cron:
+      name: run AIDE check
+      minute: 5
+      hour: 4
+      weekday: 0
+      user: root
+      job: /usr/sbin/aide  --check | /bin/mail -s "$(hostname) - AIDE Integrity Check" {{ var_aide_scan_notification_email }}
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90177-7
+    - NIST-800-53-CM-3(5)
+    - NIST-800-53-CM-6(a)
+    - aide_scan_notification
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure AIDE to Use FIPS 140-2 for Validating Hashes - Set-fact aide config file and forbidden hashes
+    ansible.builtin.set_fact:
+      aide_conf: /etc/aide.conf
+      forbidden_hashes:
+      - sha1
+      - rmd160
+      - sha256
+      - whirlpool
+      - tiger
+      - haval
+      - gost
+      - crc32
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90260-1
+    - NIST-800-171-3.13.11
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_use_fips_hashes
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure AIDE to Use FIPS 140-2 for Validating Hashes - Remove forbidden hashes
+    ansible.builtin.replace:
+      path: '{{ aide_conf }}'
+      regexp: (^\s*[A-Z][A-Za-z_]*\s*=.*?)({{ item }}\+|\+?{{ item }})(.*)
+      replace: \1\3
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"aide" in ansible_facts.packages'
+    loop: '{{ forbidden_hashes }}'
+    tags:
+    - CCE-90260-1
+    - NIST-800-171-3.13.11
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_use_fips_hashes
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Configure AIDE to Use FIPS 140-2 for Validating Hashes - Set sha512
+    ansible.builtin.replace:
+      path: '{{ aide_conf }}'
+      regexp: (^\s*[A-Z][A-Za-z_]*\s*=)((?:(?!\+?sha512).)*)\s*$
+      replace: \1\2+sha512
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"aide" in ansible_facts.packages'
+    tags:
+    - CCE-90260-1
+    - NIST-800-171-3.13.11
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_use_fips_hashes
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  - name: Get rules groups
+    ansible.builtin.shell: 'set -o pipefail
+
+      LC_ALL=C grep "^[A-Z][A-Za-z_]*" /etc/aide.conf | grep -v "^ALLXTRAHASHES" | cut -f1 -d ''='' | tr -d '' '' | sort -u || true
+
+      '
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '''aide'' in ansible_facts.packages'
+    register: find_rules_groups_results
+    changed_when: false
+    check_mode: false
+    tags:
+    - CCE-89640-7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_verify_acls
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure the acl rule is present when aide is installed.
+    ansible.builtin.replace:
+      path: /etc/aide.conf
+      regexp: (^\s*{{ item }}\s*=\s*)(?!.*acl)([^\s]*)
+      replace: \g<1>\g<2>+acl
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_rules_groups_results is not skipped and "'aide' in ansible_facts.packages"
+    with_items: '{{ find_rules_groups_results.stdout_lines | map(''trim'') | list }}'
+    tags:
+    - CCE-89640-7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_verify_acls
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Get rules groups
+    ansible.builtin.shell: 'set -o pipefail
+
+      LC_ALL=C grep "^[A-Z][A-Za-z_]*" /etc/aide.conf | grep -v "^ALLXTRAHASHES" | cut -f1 -d ''='' | tr -d '' '' | sort -u || true
+
+      '
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '''aide'' in ansible_facts.packages'
+    register: find_rules_groups_results
+    changed_when: false
+    check_mode: false
+    tags:
+    - CCE-89625-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_verify_ext_attributes
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure the xattrs rule is present when aide is installed.
+    ansible.builtin.replace:
+      path: /etc/aide.conf
+      regexp: (^\s*{{ item }}\s*=\s*)(?!.*xattrs)([^\s]*)
+      replace: \g<1>\g<2>+xattrs
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_rules_groups_results is not skipped and "'aide' in ansible_facts.packages"
+    with_items: '{{ find_rules_groups_results.stdout_lines | map(''trim'') | list }}'
+    tags:
+    - CCE-89625-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SI-7
+    - NIST-800-53-SI-7(1)
+    - aide_verify_ext_attributes
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Find configuration files
+    ansible.builtin.find:
+      paths: /etc/tmpfiles.d/
+      file_type: file
+      patterns: '*.conf'
+    register: rootfiles_configured_bash_logout_found_files
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Remove existing configuration
+    ansible.builtin.lineinfile:
+      path: '{{ item.path }}'
+      regexp: ^C\s+/root/\.bash_logout.+$
+      state: absent
+    loop: '{{ rootfiles_configured_bash_logout_found_files.files }}'
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly
+    ansible.builtin.lineinfile:
+      path: /etc/tmpfiles.d/rootfiles.conf
+      create: true
+      regexp: (?i)/usr/share/rootfiles/.bash_logout
+      line: C /root/.bash_logout 600 root root - /usr/share/rootfiles/.bash_logout
+      state: present
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Find configuration files
+    ansible.builtin.find:
+      paths: /etc/tmpfiles.d/
+      file_type: file
+      patterns: '*.conf'
+    register: rootfiles_configured_bash_profile_found_files
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Remove existing configuration
+    ansible.builtin.lineinfile:
+      path: '{{ item.path }}'
+      regexp: ^C\s+/root/\.bash_profile.+$
+      state: absent
+    loop: '{{ rootfiles_configured_bash_profile_found_files.files }}'
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly
+    ansible.builtin.lineinfile:
+      path: /etc/tmpfiles.d/rootfiles.conf
+      create: true
+      regexp: (?i)/usr/share/rootfiles/.bash_profile
+      line: C /root/.bash_profile 600 root root - /usr/share/rootfiles/.bash_profile
+      state: present
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Find configuration files
+    ansible.builtin.find:
+      paths: /etc/tmpfiles.d/
+      file_type: file
+      patterns: '*.conf'
+    register: rootfiles_configured_bashrc_found_files
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Remove existing configuration
+    ansible.builtin.lineinfile:
+      path: '{{ item.path }}'
+      regexp: ^C\s+/root/\.bashrc.+$
+      state: absent
+    loop: '{{ rootfiles_configured_bashrc_found_files.files }}'
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly
+    ansible.builtin.lineinfile:
+      path: /etc/tmpfiles.d/rootfiles.conf
+      create: true
+      regexp: (?i)/usr/share/rootfiles/.bashrc
+      line: C /root/.bashrc 600 root root - /usr/share/rootfiles/.bashrc
+      state: present
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Find configuration files
+    ansible.builtin.find:
+      paths: /etc/tmpfiles.d/
+      file_type: file
+      patterns: '*.conf'
+    register: rootfiles_configured_cshrc_found_files
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Remove existing configuration
+    ansible.builtin.lineinfile:
+      path: '{{ item.path }}'
+      regexp: ^C\s+/root/\.cshrc.+$
+      state: absent
+    loop: '{{ rootfiles_configured_cshrc_found_files.files }}'
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly
+    ansible.builtin.lineinfile:
+      path: /etc/tmpfiles.d/rootfiles.conf
+      create: true
+      regexp: (?i)/usr/share/rootfiles/.cshrc
+      line: C /root/.cshrc 600 root root - /usr/share/rootfiles/.cshrc
+      state: present
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Find configuration files
+    ansible.builtin.find:
+      paths: /etc/tmpfiles.d/
+      file_type: file
+      patterns: '*.conf'
+    register: rootfiles_configured_tcshrc_found_files
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly - Remove existing configuration
+    ansible.builtin.lineinfile:
+      path: '{{ item.path }}'
+      regexp: ^C\s+/root/\.tcshrc.+$
+      state: absent
+    loop: '{{ rootfiles_configured_tcshrc_found_files.files }}'
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured
+
+  - name: Ensure rootfiles tmpfile.d is Configured Correctly
+    ansible.builtin.lineinfile:
+      path: /etc/tmpfiles.d/rootfiles.conf
+      create: true
+      regexp: (?i)/usr/share/rootfiles/.tcshrc
+      line: C /root/.tcshrc 600 root root - /usr/share/rootfiles/.tcshrc
+      state: present
+    when: '"rootfiles" in ansible_facts.packages'
+    tags:
+    - CCE-86476-9
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - rootfiles_configured

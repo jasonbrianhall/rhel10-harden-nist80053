@@ -1,0 +1,167 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: selinux
+# SELinux state and policy.
+#
+# 4 tasks total, 3 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook selinux.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook selinux.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    var_selinux_policy_name: targeted
+    var_selinux_state: enforcing
+  tasks:
+  - name: Configure SELinux Policy
+    block:
+    - name: Check for duplicate values
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        create: true
+        regexp: (?i)^SELINUXTYPE=
+        state: absent
+      check_mode: true
+      changed_when: false
+      register: dupes
+    - name: Deduplicate values from /etc/selinux/config
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        create: true
+        regexp: (?i)^SELINUXTYPE=
+        state: absent
+      when: dupes.found is defined and dupes.found > 1
+    - name: Insert correct line to /etc/selinux/config
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        create: true
+        regexp: (?i)^SELINUXTYPE=
+        line: SELINUXTYPE={{ var_selinux_policy_name }}
+        state: present
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88366-0
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.7.2
+    - NIST-800-53-AC-3
+    - NIST-800-53-AC-3(3)(a)
+    - NIST-800-53-AU-9
+    - NIST-800-53-SC-7(21)
+    - PCI-DSSv4-1.2
+    - PCI-DSSv4-1.2.6
+    - configure_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - selinux_policytype
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure SELinux State is Enforcing - Check current SELinux state
+    ansible.builtin.command:
+      cmd: getenforce
+    register: current_selinux_state
+    check_mode: false
+    changed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89386-7
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.7.2
+    - NIST-800-53-AC-3
+    - NIST-800-53-AC-3(3)(a)
+    - NIST-800-53-AU-9
+    - NIST-800-53-SC-7(21)
+    - PCI-DSSv4-1.2
+    - PCI-DSSv4-1.2.6
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - selinux_state
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure SELinux State is Enforcing
+    block:
+    - name: Check for duplicate values
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        create: true
+        regexp: (?i)^SELINUX=
+        state: absent
+      check_mode: true
+      changed_when: false
+      register: dupes
+    - name: Deduplicate values from /etc/selinux/config
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        create: true
+        regexp: (?i)^SELINUX=
+        state: absent
+      when: dupes.found is defined and dupes.found > 1
+    - name: Insert correct line to /etc/selinux/config
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        create: true
+        regexp: (?i)^SELINUX=
+        line: SELINUX={{ var_selinux_state }}
+        state: present
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89386-7
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.7.2
+    - NIST-800-53-AC-3
+    - NIST-800-53-AC-3(3)(a)
+    - NIST-800-53-AU-9
+    - NIST-800-53-SC-7(21)
+    - PCI-DSSv4-1.2
+    - PCI-DSSv4-1.2.6
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - selinux_state
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure SELinux State is Enforcing - Mark system to relabel SELinux on next boot
+    ansible.builtin.file:
+      path: /.autorelabel
+      state: touch
+      access_time: preserve
+      modification_time: preserve
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - current_selinux_state.stdout | lower != var_selinux_state
+    tags:
+    - CCE-89386-7
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.7.2
+    - NIST-800-53-AC-3
+    - NIST-800-53-AC-3(3)(a)
+    - NIST-800-53-AU-9
+    - NIST-800-53-SC-7(21)
+    - PCI-DSSv4-1.2
+    - PCI-DSSv4-1.2.6
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - restrict_strategy
+    - selinux_state
+    - dangerous

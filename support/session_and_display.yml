@@ -1,0 +1,1318 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: session_and_display
+# GNOME/dconf, screensaver, login banners, Ctrl-Alt-Del, session/idle timeouts.
+#
+# 61 tasks total, 5 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook session_and_display.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook session_and_display.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    inactivity_timeout_value: '900'
+    var_screensaver_lock_delay: '5'
+    login_banner_contents: You are accessing a U.S. Government (USG) Information System (IS) that is\nprovided for USG-authorized use only. By using this IS (which includes any\ndevice attached to this IS), you consent to the following conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for\npurposes including, but not limited to, penetration testing, COMSEC monitoring,\nnetwork operations and defense, personnel misconduct (PM), law enforcement\n(LE), and counterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject\nto routine monitoring, interception, and search, and may be disclosed or used\nfor any USG-authorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls)\nto protect USG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE\nor CI investigative searching or monitoring of the content of privileged\ncommunications, or work product, related to personal representation or services\nby attorneys, psychotherapists, or clergy, and their assistants. Such\ncommunications and work product are private and confidential. See User\nAgreement for details.
+    dconf_login_banner_contents: Authorized users only. All activity may be monitored and reported.
+    var_accounts_tmout: '900'
+  tasks:
+  - name: Make sure that the dconf databases are up-to-date with regards to respective keyfiles - Get database modification time for distro
+    ansible.builtin.stat:
+      path: /etc/dconf/db/distro
+    register: distro_db
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86609-5
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_db_up_to_date
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Make sure that the dconf databases are up-to-date with regards to respective keyfiles - Get keyfiles for distro
+    ansible.builtin.find:
+      paths: /etc/dconf/db/distro.d/
+    register: distro_keyfiles
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86609-5
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_db_up_to_date
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Make sure that the dconf databases are up-to-date with regards to respective keyfiles - Run dconf update for distro
+    ansible.builtin.command:
+      cmd: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - '"kernel-core" in ansible_facts.packages'
+    - not distro_db.stat.exists or distro_keyfiles.files | length > 0 and distro_keyfiles.files | map(attribute='mtime') | max > distro_db.stat.mtime
+    tags:
+    - CCE-86609-5
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_db_up_to_date
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Make sure that the dconf databases are up-to-date with regards to respective keyfiles - Get database modification time for local
+    ansible.builtin.stat:
+      path: /etc/dconf/db/local
+    register: local_db
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86609-5
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_db_up_to_date
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Make sure that the dconf databases are up-to-date with regards to respective keyfiles - Get keyfiles for local
+    ansible.builtin.find:
+      paths: /etc/dconf/db/local.d/
+    register: local_keyfiles
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86609-5
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_db_up_to_date
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Make sure that the dconf databases are up-to-date with regards to respective keyfiles - Run dconf update for local
+    ansible.builtin.command:
+      cmd: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - '"kernel-core" in ansible_facts.packages'
+    - not local_db.stat.exists or local_keyfiles.files | length > 0 and local_keyfiles.files | map(attribute='mtime') | max > local_db.stat.mtime
+    tags:
+    - CCE-86609-5
+    - PCI-DSS-Req-6.2
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_db_up_to_date
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Disable the GNOME3 Login Restart and Shutdown Buttons
+    community.general.ini_file:
+      dest: /etc/dconf/db/distro.d/00-security-settings
+      section: org/gnome/login-screen
+      option: disable-restart-buttons
+      value: 'true'
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87837-1
+    - NIST-800-171-3.1.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_restart_shutdown
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME disablement of Login Restart and Shutdown Buttons
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/distro.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/login-screen/disable-restart-buttons
+      line: /org/gnome/login-screen/disable-restart-buttons
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87837-1
+    - NIST-800-171-3.1.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_restart_shutdown
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-87837-1
+    - NIST-800-171-3.1.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_restart_shutdown
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Disable the GNOME3 Login User List
+    community.general.ini_file:
+      dest: /etc/dconf/db/distro.d/00-security-settings
+      section: org/gnome/login-screen
+      option: disable-user-list
+      value: 'true'
+      no_extra_spaces: true
+      create: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87918-9
+    - NIST-800-53-AC-23
+    - NIST-800-53-CM-6(a)
+    - dconf_gnome_disable_user_list
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME3 disablement of Login User List
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/distro.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/login-screen/disable-user-list$
+      line: /org/gnome/login-screen/disable-user-list
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87918-9
+    - NIST-800-53-AC-23
+    - NIST-800-53-CM-6(a)
+    - dconf_gnome_disable_user_list
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-87918-9
+    - NIST-800-53-AC-23
+    - NIST-800-53-CM-6(a)
+    - dconf_gnome_disable_user_list
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Detect if removal-action can be found on /etc/dconf/db/local.d/
+    ansible.builtin.find:
+      path: /etc/dconf/db/local.d/
+      contains: ^\s*removal-action
+    register: dconf_gnome_lock_screen_on_smartcard_removal_config_files
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Configure removal-action - default file
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d//00-security-settings
+      section: org/gnome/settings-daemon/peripherals/smartcard
+      option: removal-action
+      value: '''lock-screen'''
+      create: true
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - dconf_gnome_lock_screen_on_smartcard_removal_config_files is defined and dconf_gnome_lock_screen_on_smartcard_removal_config_files.matched == 0
+    register: default_file
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Configure removal-action - existing files
+    community.general.ini_file:
+      dest: '{{ item.path }}'
+      section: org/gnome/settings-daemon/peripherals/smartcard
+      option: removal-action
+      value: '''lock-screen'''
+      create: true
+    with_items: '{{ dconf_gnome_lock_screen_on_smartcard_removal_config_files.files }}'
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - dconf_gnome_lock_screen_on_smartcard_removal_config_files is defined and dconf_gnome_lock_screen_on_smartcard_removal_config_files.matched > 0
+    register: existing_files
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Detect if lock for removal-action can be found on /etc/dconf/db/local.d/
+    ansible.builtin.find:
+      path: /etc/dconf/db/local.d/locks
+      contains: ^\s*removal-action
+    register: dconf_gnome_lock_screen_on_smartcard_removal_lock_files
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification removal-action - default file
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/settings-daemon/peripherals/smartcard/removal-action$
+      line: /org/gnome/settings-daemon/peripherals/smartcard/removal-action
+      create: true
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - dconf_gnome_lock_screen_on_smartcard_removal_lock_files is defined and dconf_gnome_lock_screen_on_smartcard_removal_lock_files.matched == 0
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification removal-action - existing files
+    ansible.builtin.lineinfile:
+      path: '{{ item.path }}'
+      regexp: ^/org/gnome/settings-daemon/peripherals/smartcard/removal-action$
+      line: /org/gnome/settings-daemon/peripherals/smartcard/removal-action
+      create: true
+    with_items: '{{ dconf_gnome_lock_screen_on_smartcard_removal_lock_files.files }}'
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - dconf_gnome_lock_screen_on_smartcard_removal_lock_files is defined and dconf_gnome_lock_screen_on_smartcard_removal_lock_files.matched > 0
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update - removal-action
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - default_file is changed or existing_files is changed
+    tags:
+    - CCE-87751-4
+    - dconf_gnome_lock_screen_on_smartcard_removal
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Disable GDM Automatic Login
+    community.general.ini_file:
+      dest: /etc/gdm/custom.conf
+      section: daemon
+      option: AutomaticLoginEnable
+      value: 'false'
+      no_extra_spaces: true
+      create: true
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87057-6
+    - NIST-800-171-3.1.1
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSSv4-8.3
+    - PCI-DSSv4-8.3.1
+    - gnome_gdm_disable_automatic_login
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Disable GNOME3 Automounting - automount-open
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/desktop/media-handling
+      option: automount-open
+      value: 'false'
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-86628-5
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSSv4-3.4
+    - PCI-DSSv4-3.4.2
+    - dconf_gnome_disable_automount_open
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME3 Automounting - automount-open
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/media-handling/automount-open$
+      line: /org/gnome/desktop/media-handling/automount-open
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-86628-5
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSSv4-3.4
+    - PCI-DSSv4-3.4.2
+    - dconf_gnome_disable_automount_open
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-86628-5
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSSv4-3.4
+    - PCI-DSSv4-3.4.2
+    - dconf_gnome_disable_automount_open
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Disable GNOME3 Automounting - autorun-never
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/desktop/media-handling
+      option: autorun-never
+      value: 'true'
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87588-0
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_autorun
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME3 Automounting - autorun-never
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/media-handling/autorun-never$
+      line: /org/gnome/desktop/media-handling/autorun-never
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87588-0
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_autorun
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-87588-0
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_autorun
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Set GNOME3 Screensaver Inactivity Timeout
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/desktop/session
+      option: idle-delay
+      value: uint32 {{ inactivity_timeout_value }}
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87170-7
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(a)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_idle_delay
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+    - dangerous
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed
+    tags:
+    - CCE-87170-7
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(a)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_idle_delay
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Set GNOME3 Screensaver Lock Delay After Activation Period
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/desktop/screensaver
+      option: lock-delay
+      value: uint32 {{ var_screensaver_lock_delay }}
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88417-1
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(a)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_delay
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed
+    tags:
+    - CCE-88417-1
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(a)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_delay
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Enable GNOME3 Screensaver Lock After Idle Period
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/desktop/screensaver
+      option: lock-enabled
+      value: 'true'
+      create: true
+      no_extra_spaces: true
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution != 'SLES'
+    register: screensaver_config
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Prevent user modification of GNOME lock-enabled
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/screensaver/lock-enabled$
+      line: /org/gnome/desktop/screensaver/lock-enabled
+      create: true
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution != 'SLES'
+    register: screensaver_lock
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Enable GNOME3 Screensaver Lock After Idle Period
+    community.general.ini_file:
+      dest: /etc/dconf/db/distro.d/00-security-settings
+      section: org/gnome/desktop/lockdown
+      option: disable-lock-screen
+      value: 'false'
+      create: true
+      no_extra_spaces: true
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution == 'SLES'
+    register: lockdown_config
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Prevent user modification of GNOME disable-lock-screen
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/distro.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/lockdown/disable-lock-screen$
+      line: /org/gnome/desktop/lockdown/disable-lock-screen
+      create: true
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution == 'SLES'
+    register: lockdown_lock
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Check GNOME3 screenserver disable-lock-screen false
+    ansible.builtin.command: gsettings get org.gnome.desktop.lockdown disable-lock-screen
+    register: cmd_out
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution == 'SLES'
+    changed_when: false
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Update GNOME3 screenserver disable-lock-screen false
+    ansible.builtin.command: gsettings set org.gnome.desktop.lockdown disable-lock-screen false
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution == 'SLES'
+    - cmd_out.stdout != 'false'
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Update dconf database for non-SLES systems
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution != 'SLES'
+    - (screensaver_config is changed or screensaver_lock is changed)
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Screensaver Lock After Idle Period - Update dconf database for SLES systems
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - ansible_distribution == 'SLES'
+    - (lockdown_config is changed or lockdown_lock is changed)
+    tags:
+    - CCE-89684-5
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_lock_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME Screensaver lock-enabled
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/screensaver/lock-enabled$
+      line: /org/gnome/desktop/screensaver/lock-enabled
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87356-2
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - dconf_gnome_screensaver_lock_locked
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_lineinfile is changed
+    tags:
+    - CCE-87356-2
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - dconf_gnome_screensaver_lock_locked
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Implement Blank Screensaver
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/desktop/screensaver
+      option: picture-uri
+      value: string ''
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88476-7
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(1)
+    - NIST-800-53-AC-11(1).1
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_mode_blank
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME picture-uri
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/screensaver/picture-uri$
+      line: /org/gnome/desktop/screensaver/picture-uri
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88476-7
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(1)
+    - NIST-800-53-AC-11(1).1
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_mode_blank
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-88476-7
+    - CJIS-5.5.5
+    - NIST-800-171-3.1.10
+    - NIST-800-53-AC-11(1)
+    - NIST-800-53-AC-11(1).1
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_screensaver_mode_blank
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME lock-delay
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/screensaver/lock-delay$
+      line: /org/gnome/desktop/screensaver/lock-delay
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88349-6
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - dconf_gnome_screensaver_user_locks
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_lineinfile is changed
+    tags:
+    - CCE-88349-6
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - dconf_gnome_screensaver_user_locks
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME Session idle-delay
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/desktop/session/idle-delay$
+      line: /org/gnome/desktop/session/idle-delay
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88587-1
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_session_idle_user_locks
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_lineinfile is changed
+    tags:
+    - CCE-88587-1
+    - NIST-800-171-3.1.10
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-8.1.8
+    - PCI-DSSv4-8.2
+    - PCI-DSSv4-8.2.8
+    - dconf_gnome_session_idle_user_locks
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Disable Ctrl-Alt-Del Reboot Key Sequence in GNOME3
+    community.general.ini_file:
+      dest: /etc/dconf/db/local.d/00-security-settings
+      section: org/gnome/settings-daemon/plugins/media-keys
+      option: logout
+      value: '['''']'
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-90658-6
+    - NIST-800-171-3.1.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_ctrlaltdel_reboot
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Prevent user modification of GNOME disablement of Ctrl-Alt-Del
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/local.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/settings-daemon/plugins/media-keys/logout$
+      line: /org/gnome/settings-daemon/plugins/media-keys/logout
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-90658-6
+    - NIST-800-171-3.1.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_ctrlaltdel_reboot
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+    - dangerous
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-90658-6
+    - NIST-800-171-3.1.2
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(b)
+    - dconf_gnome_disable_ctrlaltdel_reboot
+    - high_severity
+    - low_complexity
+    - medium_disruption
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Modify the System Login Banner - Ensure Correct Banner
+    ansible.builtin.copy:
+      dest: /etc/issue
+      content: '{{ login_banner_contents | replace(''\n'', ''
+
+        '') }}
+
+        '
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88261-3
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(c)
+    - banner_etc_issue
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Enable GNOME3 Login Warning Banner
+    community.general.ini_file:
+      dest: /etc/dconf/db/distro.d/00-security-settings
+      section: org/gnome/login-screen
+      option: banner-message-enable
+      value: 'true'
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87417-2
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(b)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_banner_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of GNOME banner-message-enabled
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/distro.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/login-screen/banner-message-enable$
+      line: /org/gnome/login-screen/banner-message-enable
+      create: true
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-87417-2
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(b)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_banner_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-87417-2
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(b)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_banner_enabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Set the GNOME3 Login Warning Banner Text
+    ansible.builtin.file:
+      path: /etc/dconf/db/{{ item }}
+      owner: root
+      group: root
+      mode: 493
+      state: directory
+    with_items:
+    - distro.d
+    - distro.d/locks
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88901-4
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_login_banner_text
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Set the GNOME3 Login Warning Banner Text
+    ansible.builtin.file:
+      path: /etc/dconf/db/distro.d/{{ item }}
+      owner: root
+      group: root
+      mode: 420
+      state: touch
+    with_items:
+    - 00-security-settings
+    - locks/00-security-settings-lock
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88901-4
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_login_banner_text
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Set the GNOME3 Login Warning Banner Text
+    community.general.ini_file:
+      dest: /etc/dconf/db/distro.d/00-security-settings
+      section: org/gnome/login-screen
+      option: banner-message-text
+      value: '''{{ dconf_login_banner_contents }}'''
+      create: true
+      no_extra_spaces: true
+    register: result_ini
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88901-4
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_login_banner_text
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Prevent user modification of the GNOME3 Login Warning Banner Text
+    ansible.builtin.lineinfile:
+      path: /etc/dconf/db/distro.d/locks/00-security-settings-lock
+      regexp: ^/org/gnome/login-screen/banner-message-text$
+      line: /org/gnome/login-screen/banner-message-text
+      create: true
+      state: present
+    register: result_lineinfile
+    when: '"gdm" in ansible_facts.packages'
+    tags:
+    - CCE-88901-4
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_login_banner_text
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  - name: Dconf Update
+    ansible.builtin.command: dconf update
+    when:
+    - '"gdm" in ansible_facts.packages'
+    - result_ini is changed or result_lineinfile is changed
+    tags:
+    - CCE-88901-4
+    - NIST-800-171-3.1.9
+    - NIST-800-53-AC-8(a)
+    - NIST-800-53-AC-8(c)
+    - dconf_gnome_login_banner_text
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - unknown_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Correct any occurrence of TMOUT in /etc/profile
+    ansible.builtin.replace:
+      path: /etc/profile
+      regexp: ^[^#].*TMOUT=.*
+      replace: typeset -xr TMOUT={{ var_accounts_tmout }}
+    register: profile_replaced
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88163-1
+    - NIST-800-171-3.1.11
+    - NIST-800-53-AC-12
+    - NIST-800-53-AC-2(5)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-10
+    - PCI-DSSv4-8.6
+    - PCI-DSSv4-8.6.1
+    - accounts_tmout
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Set Interactive Session Timeout
+    ansible.builtin.lineinfile:
+      path: /etc/profile.d/tmout.sh
+      create: true
+      regexp: TMOUT=
+      line: typeset -xr TMOUT={{ var_accounts_tmout }}
+      state: present
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88163-1
+    - NIST-800-171-3.1.11
+    - NIST-800-53-AC-12
+    - NIST-800-53-AC-2(5)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-10
+    - PCI-DSSv4-8.6
+    - PCI-DSSv4-8.6.1
+    - accounts_tmout
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+    - dangerous

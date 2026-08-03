@@ -1,0 +1,3387 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: filesystem_and_mounts
+# fstab mount options, partition layout, file/directory permissions.
+#
+# 127 tasks total, 98 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook filesystem_and_mounts.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook filesystem_and_mounts.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    var_removable_partition: /dev/cdrom
+  tasks:
+  - name: Ensure interactive local users have proper permissions on their respective home directories
+    ansible.builtin.file:
+      path: '{{ item.0.value[4] }}'
+      mode: u-s,g-w-s,o=-
+      follow: false
+      recurse: false
+    loop: '{{ local_users|zip(path_exists.results)|list }}'
+    when: item.1.stat is defined and item.1.stat.exists
+    tags:
+    - CCE-86605-3
+    - file_permissions_home_directories
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Define Excluded (Non-Local) File Systems and Paths
+    ansible.builtin.set_fact:
+      excluded_fstypes:
+      - afs
+      - autofs
+      - ceph
+      - cifs
+      - smb3
+      - smbfs
+      - sshfs
+      - ncpfs
+      - ncp
+      - nfs
+      - nfs4
+      - gfs
+      - gfs2
+      - glusterfs
+      - gpfs
+      - pvfs2
+      - ocfs2
+      - lustre
+      - davfs
+      - fuse.sshfs
+      excluded_paths:
+      - dev
+      - proc
+      - run
+      - sys
+      search_paths: []
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Find Relevant Root Directories Ignoring Pre-Defined Excluded Paths
+    ansible.builtin.find:
+      paths: /
+      file_type: directory
+      excludes: '{{ excluded_paths }}'
+      hidden: true
+      recurse: false
+    register: result_relevant_root_dirs
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Include Relevant Root Directories in a List of Paths to be Searched
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.path]) }}'
+    loop: '{{ result_relevant_root_dirs.files }}'
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Increment Search Paths List with Local Partitions Mount Points
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.mount]) }}'
+    loop: '{{ ansible_mounts }}'
+    when:
+    - item.fstype not in excluded_fstypes
+    - item.mount != '/'
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Increment Search Paths List with Local NFS File System Targets
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.device.split('':'')[1]]) }}'
+    loop: '{{ ansible_mounts }}'
+    when: item.device is search("localhost:")
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Define Rule Specific Facts
+    ansible.builtin.set_fact:
+      world_writable_dirs: []
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Find All Uncompliant Directories in Local File Systems
+    ansible.builtin.command:
+      cmd: find {{ item }} -xdev -type d -perm -0002 -uid +0
+    loop: '{{ search_paths }}'
+    changed_when: false
+    register: result_found_dirs
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Create List of World Writable Directories Not Owned by root
+    ansible.builtin.set_fact:
+      world_writable_dirs: '{{ world_writable_dirs | union(item.stdout_lines) | list }}'
+    loop: '{{ result_found_dirs.results }}'
+    when: item is not skipped
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Ensure All World-Writable Directories Are Owned by root User - Ensure root Ownership on Local World Writable Directories
+    ansible.builtin.file:
+      path: '{{ item }}'
+      owner: root
+    loop: '{{ world_writable_dirs }}'
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Define Excluded (Non-Local) File Systems and Paths
+    ansible.builtin.set_fact:
+      excluded_fstypes:
+      - afs
+      - autofs
+      - ceph
+      - cifs
+      - smb3
+      - smbfs
+      - sshfs
+      - ncpfs
+      - ncp
+      - nfs
+      - nfs4
+      - gfs
+      - gfs2
+      - glusterfs
+      - gpfs
+      - pvfs2
+      - ocfs2
+      - lustre
+      - davfs
+      - fuse.sshfs
+      excluded_paths:
+      - dev
+      - proc
+      - run
+      - sys
+      search_paths: []
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Find Relevant Root Directories Ignoring Pre-Defined Excluded Paths
+    ansible.builtin.find:
+      paths: /
+      file_type: directory
+      excludes: '{{ excluded_paths }}'
+      hidden: true
+      recurse: false
+    register: result_relevant_root_dirs
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Include Relevant Root Directories in a List of Paths to be Searched
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.path]) }}'
+    loop: '{{ result_relevant_root_dirs.files }}'
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Increment Search Paths List with Local Partitions Mount Points
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.mount]) }}'
+    loop: '{{ ansible_mounts }}'
+    when:
+    - item.fstype not in excluded_fstypes
+    - item.mount != '/'
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Increment Search Paths List with Local NFS File System Targets
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.device.split('':'')[1]]) }}'
+    loop: '{{ ansible_mounts }}'
+    when: item.device is search("localhost:")
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Define Rule Specific Facts
+    ansible.builtin.set_fact:
+      world_writable_dirs: []
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Find All Uncompliant Directories in Local File Systems
+    ansible.builtin.command:
+      cmd: find {{ item }} -xdev -type d ( -perm -0002 -a ! -perm -1000 )
+    loop: '{{ search_paths }}'
+    changed_when: false
+    register: result_found_dirs
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Create List of World Writable Directories Without Sticky Bit
+    ansible.builtin.set_fact:
+      world_writable_dirs: '{{ world_writable_dirs | union(item.stdout_lines) | list }}'
+    loop: '{{ result_found_dirs.results }}'
+    when: result_found_dirs is not skipped and item is not skipped
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Verify that All World-Writable Directories Have Sticky Bits Set - Ensure Sticky Bit is Set on Local World Writable Directories
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: a+t
+    loop: '{{ world_writable_dirs }}'
+    tags:
+    - CCE-88397-5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - dir_perms_world_writable_sticky_bits
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Read list of world and group writable system executables
+    ansible.builtin.command: find -L /bin /usr/bin /usr/local/bin /sbin /usr/sbin /usr/local/sbin /usr/libexec -perm /022 \( -type l -o -type f \)
+    register: world_writable_library_files
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    tags:
+    - CCE-86978-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - file_permissions_binary_dirs
+    - medium_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove world/group writability of system executables
+    ansible.builtin.file:
+      path: '{{ item }}'
+      mode: go-w
+      state: file
+    with_items: '{{ world_writable_library_files.stdout_lines }}'
+    when: world_writable_library_files.stdout_lines | length > 0
+    tags:
+    - CCE-86978-4
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-5(6)
+    - NIST-800-53-CM-5(6).1
+    - NIST-800-53-CM-6(a)
+    - file_permissions_binary_dirs
+    - medium_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /boot: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/boot'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-90132-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /boot: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-90132-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /boot: If /boot not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /boot
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-90132-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /boot: Make sure nodev option is part of the to /boot options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nodev'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined and "nodev" not in (mount_info.options | default(''))
+    tags:
+    - CCE-90132-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /boot: Ensure /boot is mounted with nodev option'
+    ansible.posix.mount:
+      path: /boot
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-90132-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /boot: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/boot'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-88881-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /boot: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-88881-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /boot: If /boot not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /boot
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-88881-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /boot: Make sure nosuid option is part of the to /boot options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nosuid'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined and "nosuid" not in (mount_info.options | default(''))
+    tags:
+    - CCE-88881-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /boot: Ensure /boot is mounted with nosuid option'
+    ansible.posix.mount:
+      path: /boot
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-88881-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_boot_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /dev/shm: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt  '/dev/shm'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-86783-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /dev/shm: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-86783-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /dev/shm: If /dev/shm not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /dev/shm
+      - tmpfs
+      - tmpfs
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - ("" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-86783-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /dev/shm: Make sure nodev option is part of the to /dev/shm options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nodev'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined and "nodev" not in (mount_info.options | default(''))
+    tags:
+    - CCE-86783-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /dev/shm: Ensure /dev/shm is mounted with nodev option'
+    ansible.posix.mount:
+      path: /dev/shm
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("" | length == 0)
+    tags:
+    - CCE-86783-8
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /dev/shm: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt  '/dev/shm'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-86775-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /dev/shm: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-86775-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /dev/shm: If /dev/shm not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /dev/shm
+      - tmpfs
+      - tmpfs
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - ("" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-86775-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /dev/shm: Make sure noexec option is part of the to /dev/shm options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''noexec'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined and "noexec" not in (mount_info.options | default(''))
+    tags:
+    - CCE-86775-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /dev/shm: Ensure /dev/shm is mounted with noexec option'
+    ansible.posix.mount:
+      path: /dev/shm
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("" | length == 0)
+    tags:
+    - CCE-86775-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /dev/shm: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt  '/dev/shm'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-88358-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /dev/shm: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-88358-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /dev/shm: If /dev/shm not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /dev/shm
+      - tmpfs
+      - tmpfs
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - ("" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-88358-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /dev/shm: Make sure nosuid option is part of the to /dev/shm options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nosuid'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined and "nosuid" not in (mount_info.options | default(''))
+    tags:
+    - CCE-88358-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /dev/shm: Ensure /dev/shm is mounted with nosuid option'
+    ansible.posix.mount:
+      path: /dev/shm
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("" | length == 0)
+    tags:
+    - CCE-88358-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_dev_shm_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /home: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/home'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-87344-8
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - mount_option_home_nodev
+    - no_reboot_needed
+    - unknown_severity
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /home: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87344-8
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - mount_option_home_nodev
+    - no_reboot_needed
+    - unknown_severity
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /home: If /home not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /home
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87344-8
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - mount_option_home_nodev
+    - no_reboot_needed
+    - unknown_severity
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /home: Make sure nodev option is part of the to /home options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nodev'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nodev" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87344-8
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - mount_option_home_nodev
+    - no_reboot_needed
+    - unknown_severity
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /home: Ensure /home is mounted with nodev option'
+    ansible.posix.mount:
+      path: /home
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87344-8
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - mount_option_home_nodev
+    - no_reboot_needed
+    - unknown_severity
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /home: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/home'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-87810-8
+    - NIST-800-53-CM-6(b)
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /home: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87810-8
+    - NIST-800-53-CM-6(b)
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /home: If /home not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /home
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87810-8
+    - NIST-800-53-CM-6(b)
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /home: Make sure noexec option is part of the to /home options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''noexec'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined and "noexec" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87810-8
+    - NIST-800-53-CM-6(b)
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /home: Ensure /home is mounted with noexec option'
+    ansible.posix.mount:
+      path: /home
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87810-8
+    - NIST-800-53-CM-6(b)
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /home: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/home'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-88987-3
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /home: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-88987-3
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /home: If /home not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /home
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-88987-3
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /home: Make sure nosuid option is part of the to /home options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nosuid'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nosuid" not in (mount_info.options | default(''))
+    tags:
+    - CCE-88987-3
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /home: Ensure /home is mounted with nosuid option'
+    ansible.posix.mount:
+      path: /home
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/home" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-88987-3
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_home_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to Non-Root Local Partitions: Refresh facts'
+    ansible.builtin.setup:
+      gather_subset: mounts
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-88981-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_nodev_nonroot_local_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to Non-Root Local Partitions: Define excluded (non-local) file systems'
+    ansible.builtin.set_fact:
+      excluded_fstypes:
+      - afs
+      - autofs
+      - ceph
+      - cifs
+      - smb3
+      - smbfs
+      - sshfs
+      - ncpfs
+      - ncp
+      - nfs
+      - nfs4
+      - gfs
+      - gfs2
+      - glusterfs
+      - gpfs
+      - pvfs2
+      - ocfs2
+      - lustre
+      - davfs
+      - fuse.sshfs
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-88981-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_nodev_nonroot_local_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to Non-Root Local Partitions: Ensure non-root local partitions are mounted with nodev option'
+    ansible.posix.mount:
+      path: '{{ item.mount }}'
+      src: '{{ item.device }}'
+      opts: '{{ item.options }},nodev'
+      state: mounted
+      fstype: '{{ item.fstype }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - item.mount is match('/\w')
+    - item.mount is not match('/(boot|efi)')
+    - item.options is not search('nodev')
+    - item.fstype not in excluded_fstypes
+    - (not accounts_polyinstantiated_var_tmp | default(false)) or item.mount != '/var/tmp/tmp-inst'
+    - (not accounts_polyinstantiated_tmp | default(false)) or item.mount != '/tmp/tmp-inst'
+    with_items:
+    - '{{ ansible_facts.mounts }}'
+    tags:
+    - CCE-88981-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_nodev_nonroot_local_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to Non-Root Local Partitions: Ensure nodev option in /etc/fstab for non-root local partitions'
+    ansible.builtin.replace:
+      path: /etc/fstab
+      regexp: ^\s*(?!#)(/dev/\S+|UUID=\S+)\s+(/(?!boot|efi)\w\S*)\s+(\S+)\s+(?!.*\bnodev\b)(\S+)(.*)$
+      replace: \1 \2 \3 \4,nodev \5
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-88981-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_nodev_nonroot_local_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure permission nodev are set on var_removable_partition
+    ansible.builtin.lineinfile:
+      path: /etc/fstab
+      regexp: ^\s*({{ var_removable_partition }})\s+([^\s]*)\s+([^\s]*)\s+([^\s]*)(.*)$
+      backrefs: true
+      line: \1 \2 \3 \4,nodev \5
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-90154-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_nodev_removable_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure permission noexec are set on var_removable_partition
+    ansible.builtin.lineinfile:
+      path: /etc/fstab
+      regexp: ^\s*({{ var_removable_partition }})\s+([^\s]*)\s+([^\s]*)\s+([^\s]*)(.*)$
+      backrefs: true
+      line: \1 \2 \3 \4,noexec \5
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-90378-1
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_noexec_removable_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure permission nosuid are set on var_removable_partition
+    ansible.builtin.lineinfile:
+      path: /etc/fstab
+      regexp: ^\s*({{ var_removable_partition }})\s+([^\s]*)\s+([^\s]*)\s+([^\s]*)(.*)$
+      backrefs: true
+      line: \1 \2 \3 \4,nosuid \5
+    when: ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    tags:
+    - CCE-88078-1
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_nosuid_removable_partitions
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /tmp: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/tmp'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-90522-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /tmp: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-90522-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /tmp: If /tmp not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /tmp
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-90522-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /tmp: Make sure nodev option is part of the to /tmp options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nodev'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nodev" not in (mount_info.options | default(''))
+    tags:
+    - CCE-90522-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /tmp: Ensure /tmp is mounted with nodev option'
+    ansible.posix.mount:
+      path: /tmp
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-90522-4
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /tmp: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/tmp'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-87095-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /tmp: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87095-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /tmp: If /tmp not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /tmp
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87095-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /tmp: Make sure noexec option is part of the to /tmp options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''noexec'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "noexec" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87095-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /tmp: Ensure /tmp is mounted with noexec option'
+    ansible.posix.mount:
+      path: /tmp
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87095-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /tmp: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/tmp'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-87318-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /tmp: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87318-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /tmp: If /tmp not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /tmp
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87318-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /tmp: Make sure nosuid option is part of the to /tmp options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nosuid'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nosuid" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87318-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /tmp: Ensure /tmp is mounted with nosuid option'
+    ansible.posix.mount:
+      path: /tmp
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87318-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/log: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var/log'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/log" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-89389-1
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_log_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/log: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/log" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-89389-1
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_log_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/log: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var/log'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/log" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-89129-1
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_log_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/log: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/log" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-89129-1
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_log_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/log: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var/log'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/log" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-90639-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_log_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/log: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/log" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-90639-6
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_log_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-87070-9
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87070-9
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var: If /var not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /var
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87070-9
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var: Make sure nodev option is part of the to /var options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nodev'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nodev" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87070-9
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var: Ensure /var is mounted with nodev option'
+    ansible.posix.mount:
+      path: /var
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87070-9
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/tmp: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var/tmp'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-89441-0
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/tmp: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-89441-0
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/tmp: If /var/tmp not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /var/tmp
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-89441-0
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/tmp: Make sure nodev option is part of the to /var/tmp options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nodev'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nodev" not in (mount_info.options | default(''))
+    tags:
+    - CCE-89441-0
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nodev Option to /var/tmp: Ensure /var/tmp is mounted with nodev option'
+    ansible.posix.mount:
+      path: /var/tmp
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-89441-0
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nodev
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/tmp: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var/tmp'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-87347-1
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/tmp: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87347-1
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/tmp: If /var/tmp not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /var/tmp
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87347-1
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/tmp: Make sure noexec option is part of the to /var/tmp options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''noexec'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "noexec" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87347-1
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add noexec Option to /var/tmp: Ensure /var/tmp is mounted with noexec option'
+    ansible.posix.mount:
+      path: /var/tmp
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87347-1
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_noexec
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/tmp: Check information associated to mountpoint'
+    ansible.builtin.command: findmnt --fstab '/var/tmp'
+    register: device_name
+    failed_when: device_name.rc > 1
+    changed_when: false
+    check_mode: false
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    tags:
+    - CCE-87892-6
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/tmp: Create mount_info dictionary variable'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - '{{ device_name.stdout_lines[0].split() | map(''lower'') | list }}'
+    - '{{ device_name.stdout_lines[1].split() | list }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length > 0)
+    tags:
+    - CCE-87892-6
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/tmp: If /var/tmp not mounted, craft mount_info manually'
+    set_fact:
+      mount_info: '{{ mount_info|default({})|combine({item.0: item.1}) }}'
+    with_together:
+    - - target
+      - source
+      - fstype
+      - options
+    - - /var/tmp
+      - ''
+      - ''
+      - defaults
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - ("--fstab" | length == 0)
+    - device_name.stdout is defined and device_name.stdout_lines is defined
+    - (device_name.stdout | length == 0)
+    tags:
+    - CCE-87892-6
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/tmp: Make sure nosuid option is part of the to /var/tmp options'
+    set_fact:
+      mount_info: '{{ mount_info | combine( {''options'':''''~(mount_info.options | default(''''))~('','' if (mount_info.options | default('''')) else '''')~''nosuid'' }) }}'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined and "nosuid" not in (mount_info.options | default(''))
+    tags:
+    - CCE-87892-6
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Add nosuid Option to /var/tmp: Ensure /var/tmp is mounted with nosuid option'
+    ansible.posix.mount:
+      path: /var/tmp
+      src: '{{ mount_info.source | default('''') }}'
+      opts: '{{ mount_info.options | default('''') }}'
+      state: mounted
+      fstype: '{{ mount_info.fstype | default('''') }}'
+    register: mount_result
+    failed_when:
+    - mount_result is failed
+    - '''target is busy'' not in (mount_result.msg | default(''''))'
+    - '''already mounted'' not in (mount_result.msg | default(''''))'
+    when:
+    - ( not ( "kernel-core" in ansible_facts.packages and "rpm-ostree" in ansible_facts.packages and "bootc" in ansible_facts.packages and not "openshift-kubelet" in ansible_facts.packages and "ostree" in ansible_proc_cmdline ) and not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] ) )
+    - '"/var/tmp" in ansible_mounts | map(attribute="mount") | list'
+    - mount_info is defined
+    - (device_name.stdout is defined and (device_name.stdout | length > 0)) or ("--fstab" | length == 0)
+    tags:
+    - CCE-87892-6
+    - configure_strategy
+    - high_disruption
+    - low_complexity
+    - medium_severity
+    - mount_option_var_tmp_nosuid
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if noexec argument is already present in /etc/default/grub
+    ansible.builtin.slurp:
+      src: /etc/default/grub
+    register: etc_default_grub
+    when: ( "kernel-core" in ansible_facts.packages and ansible_architecture == "x86_64" )
+    tags:
+    - CCE-89079-8
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-39
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - sysctl_kernel_exec_shield
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if noexec argument is present
+    ansible.builtin.command: /sbin/grubby --info=ALL
+    register: grubby_info
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: ( "kernel-core" in ansible_facts.packages and ansible_architecture == "x86_64" )
+    tags:
+    - CCE-89079-8
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-39
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - sysctl_kernel_exec_shield
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Update grub defaults and the bootloader menu
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --remove-args="noexec"
+    when:
+    - ( "kernel-core" in ansible_facts.packages and ansible_architecture == "x86_64" )
+    - (grubby_info.stdout is search('noexec')) or ((etc_default_grub['content'] | b64decode) is search('noexec'))
+    tags:
+    - CCE-89079-8
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-39
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - sysctl_kernel_exec_shield
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: 'Uninstall nfs-utils Package: Ensure nfs-utils is removed'
+    ansible.builtin.package:
+      name: nfs-utils
+      state: absent
+    tags:
+    - CCE-88270-4
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - low_severity
+    - no_reboot_needed
+    - package_nfs-utils_removed
+    - dangerous
+
+  - name: Get nfs and nfs4 mount points, that don't have sec=krb5:krb5i:krb5p
+    ansible.builtin.command: findmnt --fstab --types nfs,nfs4 -O nosec=krb5:krb5i:krb5p -n -P
+    register: points_register
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87249-9
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-IA-2
+    - NIST-800-53-IA-2(8)
+    - NIST-800-53-IA-2(9)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_krb_sec_remote_filesystems
+    - no_reboot_needed
+
+  - name: Add sec=krb5:krb5i:krb5p to nfs and nfs4 mount points
+    ansible.posix.mount:
+      path: '{{ item | regex_search(''TARGET="([^"]+)"'',''\1'') | first }}'
+      src: '{{ item | regex_search(''SOURCE="([^"]+)"'',''\1'') | first }}'
+      fstype: '{{ item | regex_search(''FSTYPE="([^"]+)"'',''\1'') | first }}'
+      state: present
+      opts: '{{ item | regex_search(''OPTIONS="([^"]+)"'',''\1'') | first }},sec=krb5:krb5i:krb5p'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - (points_register.stdout | length > 0) and '\\x09' not in item
+    with_items: '{{ points_register.stdout_lines }}'
+    tags:
+    - CCE-87249-9
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-IA-2
+    - NIST-800-53-IA-2(8)
+    - NIST-800-53-IA-2(9)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_krb_sec_remote_filesystems
+    - no_reboot_needed
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Get nfs and nfs4 mount points, that don't have nodev
+    ansible.builtin.command: findmnt --fstab --types nfs,nfs4 -O nonodev -n -P
+    register: points_register
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88013-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MP-2
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_nodev_remote_filesystems
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Add nodev to nfs and nfs4 mount points
+    ansible.posix.mount:
+      path: '{{ item | regex_search(''TARGET="([^"]+)"'',''\1'') | first }}'
+      src: '{{ item | regex_search(''SOURCE="([^"]+)"'',''\1'') | first }}'
+      fstype: '{{ item | regex_search(''FSTYPE="([^"]+)"'',''\1'') | first }}'
+      state: present
+      opts: '{{ item | regex_search(''OPTIONS="([^"]+)"'',''\1'') | first }},nodev'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - (points_register.stdout | length > 0) and '\\x09' not in item
+    with_items: '{{ points_register.stdout_lines }}'
+    tags:
+    - CCE-88013-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-MP-2
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_nodev_remote_filesystems
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Get nfs and nfs4 mount points, that don't have noexec
+    ansible.builtin.command: findmnt --fstab --types nfs,nfs4 -O nonoexec -n -P
+    register: points_register
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86463-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(10)
+    - NIST-800-53-AC-6(8)
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_noexec_remote_filesystems
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Add noexec to nfs and nfs4 mount points
+    ansible.posix.mount:
+      path: '{{ item | regex_search(''TARGET="([^"]+)"'',''\1'') | first }}'
+      src: '{{ item | regex_search(''SOURCE="([^"]+)"'',''\1'') | first }}'
+      fstype: '{{ item | regex_search(''FSTYPE="([^"]+)"'',''\1'') | first }}'
+      state: present
+      opts: '{{ item | regex_search(''OPTIONS="([^"]+)"'',''\1'') | first }},noexec'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - (points_register.stdout | length > 0) and '\\x09' not in item
+    with_items: '{{ points_register.stdout_lines }}'
+    tags:
+    - CCE-86463-7
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(10)
+    - NIST-800-53-AC-6(8)
+    - NIST-800-53-CM-6(a)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_noexec_remote_filesystems
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Get nfs and nfs4 mount points, that don't have nosuid
+    ansible.builtin.command: findmnt --fstab --types nfs,nfs4 -O nonosuid -n -P
+    register: points_register
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90504-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM6(a)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_nosuid_remote_filesystems
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Add nosuid to nfs and nfs4 mount points
+    ansible.posix.mount:
+      path: '{{ item | regex_search(''TARGET="([^"]+)"'',''\1'') | first }}'
+      src: '{{ item | regex_search(''SOURCE="([^"]+)"'',''\1'') | first }}'
+      fstype: '{{ item | regex_search(''FSTYPE="([^"]+)"'',''\1'') | first }}'
+      state: present
+      opts: '{{ item | regex_search(''OPTIONS="([^"]+)"'',''\1'') | first }},nosuid'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - (points_register.stdout | length > 0) and '\\x09' not in item
+    with_items: '{{ points_register.stdout_lines }}'
+    tags:
+    - CCE-90504-2
+    - NIST-800-53-AC-6
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM6(a)
+    - configure_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - mount_option_nosuid_remote_filesystems
+    - no_reboot_needed
+    - dangerous
+
+  - name: Remove Host-Based Authentication Files - Define Excluded (Non-Local) File Systems and Paths
+    ansible.builtin.set_fact:
+      excluded_fstypes:
+      - afs
+      - autofs
+      - ceph
+      - cifs
+      - smb3
+      - smbfs
+      - sshfs
+      - ncpfs
+      - ncp
+      - nfs
+      - nfs4
+      - gfs
+      - gfs2
+      - glusterfs
+      - gpfs
+      - pvfs2
+      - ocfs2
+      - lustre
+      - davfs
+      - fuse.sshfs
+      excluded_paths:
+      - dev
+      - proc
+      - run
+      - sys
+      search_paths: []
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Increment Search Paths List with Local Partitions Mount Points
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.mount]) }}'
+    loop: '{{ ansible_mounts }}'
+    when:
+    - item.fstype not in excluded_fstypes
+    - item.mount != '/'
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove Host-Based Authentication Files - Increment Search Paths List with Local NFS File System Targets
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.device.split('':'')[1]]) }}'
+    loop: '{{ ansible_mounts }}'
+    when: item.device is search("localhost:")
+    tags:
+    - CCE-89350-3
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_host_based_files
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Define Excluded (Non-Local) File Systems and Paths
+    ansible.builtin.set_fact:
+      excluded_fstypes:
+      - afs
+      - autofs
+      - ceph
+      - cifs
+      - smb3
+      - smbfs
+      - sshfs
+      - ncpfs
+      - ncp
+      - nfs
+      - nfs4
+      - gfs
+      - gfs2
+      - glusterfs
+      - gpfs
+      - pvfs2
+      - ocfs2
+      - lustre
+      - davfs
+      - fuse.sshfs
+      excluded_paths:
+      - dev
+      - proc
+      - run
+      - sys
+      search_paths: []
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Increment Search Paths List with Local Partitions Mount Points
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.mount]) }}'
+    loop: '{{ ansible_mounts }}'
+    when:
+    - item.fstype not in excluded_fstypes
+    - item.mount != '/'
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy
+
+  - name: Remove User Host-Based Authentication Files - Increment Search Paths List with Local NFS File System Targets
+    ansible.builtin.set_fact:
+      search_paths: '{{ search_paths | union([item.device.split('':'')[1]]) }}'
+    loop: '{{ ansible_mounts }}'
+    when: item.device is search("localhost:")
+    tags:
+    - CCE-89341-2
+    - high_severity
+    - low_complexity
+    - low_disruption
+    - no_reboot_needed
+    - no_user_host_based_files
+    - restrict_strategy

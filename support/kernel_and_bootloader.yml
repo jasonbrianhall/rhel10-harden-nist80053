@@ -1,0 +1,3372 @@
+---
+###############################################################################
+# Auto-split from rhel10-remediation.yml (OpenSCAP RHEL 10 STIG playbook)
+# Functional area: kernel_and_bootloader
+# sysctl, kernel modules, GRUB/bootloader, kernel command line, core dumps.
+#
+# 150 tasks total, 31 tagged `dangerous` (can lock you out / break
+# the system -- e.g. root login restriction, account lockout, package
+# removal, service disabling, mount option changes, SELinux enforcing, FIPS,
+# GRUB changes). Each dangerous task also has a "# DANGEROUS:" comment above
+# it in this file. Skip them with:
+#   ansible-playbook kernel_and_bootloader.yml --skip-tags dangerous
+# Or run ONLY them with:
+#   ansible-playbook kernel_and_bootloader.yml --tags dangerous
+###############################################################################
+- hosts: all
+  vars:
+    sysctl_net_ipv6_conf_all_accept_ra_value: '0'
+    sysctl_net_ipv6_conf_all_accept_redirects_value: '0'
+    sysctl_net_ipv6_conf_all_accept_source_route_value: '0'
+    sysctl_net_ipv6_conf_all_forwarding_value: '0'
+    sysctl_net_ipv6_conf_default_accept_ra_value: '0'
+    sysctl_net_ipv6_conf_default_accept_redirects_value: '0'
+    sysctl_net_ipv6_conf_default_accept_source_route_value: '0'
+    sysctl_net_ipv4_conf_all_accept_redirects_value: '0'
+    sysctl_net_ipv4_conf_all_accept_source_route_value: '0'
+    sysctl_net_ipv4_conf_all_forwarding_value: '0'
+    sysctl_net_ipv4_conf_all_rp_filter_value: '1'
+    sysctl_net_ipv4_conf_default_accept_redirects_value: '0'
+    sysctl_net_ipv4_conf_default_accept_source_route_value: '0'
+    sysctl_net_ipv4_conf_default_rp_filter_value: '1'
+    sysctl_net_ipv4_icmp_echo_ignore_broadcasts_value: '1'
+    sysctl_net_ipv4_icmp_ignore_bogus_error_responses_value: '1'
+    sysctl_net_ipv4_tcp_invalid_ratelimit_value: '500'
+    sysctl_net_ipv4_tcp_syncookies_value: '1'
+    sysctl_kernel_kptr_restrict_value: '1'
+    var_audit_backlog_limit: '8192'
+  tasks:
+  - name: Verify that Interactive Boot is Disabled - Verify GRUB_DISABLE_RECOVERY=true
+    ansible.builtin.lineinfile:
+      path: /etc/default/grub
+      regexp: ^GRUB_DISABLE_RECOVERY=.*
+      line: GRUB_DISABLE_RECOVERY=true
+      state: present
+    register: grub_disable_recovery_changed
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-89661-3
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-2(1)
+    - grub2_disable_interactive_boot
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Verify that Interactive Boot is Disabled - Verify that Interactive Boot is Disabled in /etc/default/grub
+    ansible.builtin.replace:
+      dest: /etc/default/grub
+      regexp: systemd.confirm_spawn(=(1|yes|true|on)|\b)
+      replace: systemd.confirm_spawn=no
+    register: grub_confirm_spawn_changed
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-89661-3
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-2(1)
+    - grub2_disable_interactive_boot
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Verify that Interactive Boot is Disabled - Verify that Interactive Boot is Disabled (runtime)
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --remove-args="systemd.confirm_spawn"
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    - grub_confirm_spawn_changed is changed
+    tags:
+    - CCE-89661-3
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-2(1)
+    - grub2_disable_interactive_boot
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Verify that Interactive Boot is Disabled - Regen grub.cfg handle updated GRUB_DISABLE_RECOVERY and confirm_spawn
+    ansible.builtin.command: grub2-mkconfig -o  /boot/grub2/grub.cfg
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    - grub_disable_recovery_changed is changed or grub_confirm_spawn_changed is changed
+    tags:
+    - CCE-89661-3
+    - NIST-800-171-3.1.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-2(1)
+    - grub2_disable_interactive_boot
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if init_on_free argument is already present in /etc/default/grub
+    ansible.builtin.slurp:
+      src: /etc/default/grub
+    register: etc_default_grub
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-90140-5
+    - NIST-800-53-SC-3
+    - grub2_init_on_free
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Check if init_on_free argument is already present
+    ansible.builtin.command: /sbin/grubby --info=ALL
+    register: grubby_info
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-90140-5
+    - NIST-800-53-SC-3
+    - grub2_init_on_free
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Update grub defaults and the bootloader menu
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --args="init_on_free=1"
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - '"grub2-common" in ansible_facts.packages'
+    - (grubby_info.stdout is not search('init_on_free=1')) or ((etc_default_grub['content'] | b64decode) is not search('init_on_free=1'))
+    tags:
+    - CCE-90140-5
+    - NIST-800-53-SC-3
+    - grub2_init_on_free
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if pti argument is already present in /etc/default/grub
+    ansible.builtin.slurp:
+      src: /etc/default/grub
+    register: etc_default_grub
+    when: ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    tags:
+    - CCE-88971-7
+    - NIST-800-53-SI-16
+    - grub2_pti_argument
+    - low_disruption
+    - low_severity
+    - medium_complexity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Check if pti argument is already present
+    ansible.builtin.command: /sbin/grubby --info=ALL
+    register: grubby_info
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    tags:
+    - CCE-88971-7
+    - NIST-800-53-SI-16
+    - grub2_pti_argument
+    - low_disruption
+    - low_severity
+    - medium_complexity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Update grub defaults and the bootloader menu
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --args="pti=on"
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - (grubby_info.stdout is not search('pti=on')) or ((etc_default_grub['content'] | b64decode) is not search('pti=on'))
+    tags:
+    - CCE-88971-7
+    - NIST-800-53-SI-16
+    - grub2_pti_argument
+    - low_disruption
+    - low_severity
+    - medium_complexity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if vsyscall argument is already present in /etc/default/grub
+    ansible.builtin.slurp:
+      src: /etc/default/grub
+    register: etc_default_grub
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - ansible_architecture == "x86_64"
+    tags:
+    - CCE-87153-3
+    - NIST-800-53-CM-7(a)
+    - grub2_vsyscall_argument
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Check if vsyscall argument is already present
+    ansible.builtin.command: /sbin/grubby --info=ALL
+    register: grubby_info
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - ansible_architecture == "x86_64"
+    tags:
+    - CCE-87153-3
+    - NIST-800-53-CM-7(a)
+    - grub2_vsyscall_argument
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Update grub defaults and the bootloader menu
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --args="vsyscall=none"
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - ansible_architecture == "x86_64"
+    - (grubby_info.stdout is not search('vsyscall=none')) or ((etc_default_grub['content'] | b64decode) is not search('vsyscall=none'))
+    tags:
+    - CCE-87153-3
+    - NIST-800-53-CM-7(a)
+    - grub2_vsyscall_argument
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Set the file_groupowner_grub2_cfg_newgroup variable if represented by gid
+    ansible.builtin.set_fact:
+      file_groupowner_grub2_cfg_newgroup: '0'
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] )
+    tags:
+    - CCE-88691-1
+    - CJIS-5.5.2.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-7.1
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_grub2_cfg
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Test for existence /boot/grub2/grub.cfg
+    ansible.builtin.stat:
+      path: /boot/grub2/grub.cfg
+    register: file_exists
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] )
+    tags:
+    - CCE-88691-1
+    - CJIS-5.5.2.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-7.1
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_grub2_cfg
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure group owner on /boot/grub2/grub.cfg
+    ansible.builtin.file:
+      path: /boot/grub2/grub.cfg
+      follow: false
+      group: '{{ file_groupowner_grub2_cfg_newgroup }}'
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] )
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-88691-1
+    - CJIS-5.5.2.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-7.1
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_groupowner_grub2_cfg
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  - name: Set the file_owner_grub2_cfg_newown variable if represented by uid
+    ansible.builtin.set_fact:
+      file_owner_grub2_cfg_newown: '0'
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] )
+    tags:
+    - CCE-89438-6
+    - CJIS-5.5.2.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-7.1
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_grub2_cfg
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Test for existence /boot/grub2/grub.cfg
+    ansible.builtin.stat:
+      path: /boot/grub2/grub.cfg
+    register: file_exists
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] )
+    tags:
+    - CCE-89438-6
+    - CJIS-5.5.2.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-7.1
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_grub2_cfg
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure owner on /boot/grub2/grub.cfg
+    ansible.builtin.file:
+      path: /boot/grub2/grub.cfg
+      follow: false
+      owner: '{{ file_owner_grub2_cfg_newown }}'
+    when:
+    - ( "grub2-common" in ansible_facts.packages and "kernel-core" in ansible_facts.packages )
+    - not ( ansible_virtualization_type in ["docker", "lxc", "openvz", "podman", "container"] )
+    - file_exists.stat is defined and file_exists.stat.exists
+    tags:
+    - CCE-89438-6
+    - CJIS-5.5.2.2
+    - NIST-800-171-3.4.5
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-7.1
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_owner_grub2_cfg
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - dangerous
+
+  - name: Configure Accepting Router Advertisements on All IPv6 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88665-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_ra
+
+  - name: Configure Accepting Router Advertisements on All IPv6 Interfaces - Comment out any occurrences of net.ipv6.conf.all.accept_ra from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.all.accept_ra
+      replace: '#net.ipv6.conf.all.accept_ra'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88665-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_ra
+
+  - name: Configure Accepting Router Advertisements on All IPv6 Interfaces - Ensure sysctl net.ipv6.conf.all.accept_ra is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.all.accept_ra
+      value: '{{ sysctl_net_ipv6_conf_all_accept_ra_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_all_accept_ra.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88665-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_ra
+
+  - name: Disable Accepting ICMP Redirects for All IPv6 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90083-7
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_redirects
+
+  - name: Disable Accepting ICMP Redirects for All IPv6 Interfaces - Comment out any occurrences of net.ipv6.conf.all.accept_redirects from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.all.accept_redirects
+      replace: '#net.ipv6.conf.all.accept_redirects'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90083-7
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_redirects
+
+  - name: Disable Accepting ICMP Redirects for All IPv6 Interfaces - Ensure sysctl net.ipv6.conf.all.accept_redirects is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.all.accept_redirects
+      value: '{{ sysctl_net_ipv6_conf_all_accept_redirects_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_all_accept_redirects.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90083-7
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv6 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90450-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv6 Interfaces - Comment out any occurrences of net.ipv6.conf.all.accept_source_route from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.all.accept_source_route
+      replace: '#net.ipv6.conf.all.accept_source_route'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90450-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv6 Interfaces - Ensure sysctl net.ipv6.conf.all.accept_source_route is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.all.accept_source_route
+      value: '{{ sysctl_net_ipv6_conf_all_accept_source_route_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_all_accept_source_route.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90450-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_source_route
+
+  - name: Disable Kernel Parameter for IPv6 Forwarding - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86882-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_forwarding
+
+  - name: Disable Kernel Parameter for IPv6 Forwarding - Comment out any occurrences of net.ipv6.conf.all.forwarding from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.all.forwarding
+      replace: '#net.ipv6.conf.all.forwarding'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86882-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_forwarding
+
+  - name: Disable Kernel Parameter for IPv6 Forwarding - Ensure sysctl net.ipv6.conf.all.forwarding is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.all.forwarding
+      value: '{{ sysctl_net_ipv6_conf_all_forwarding_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_all_forwarding.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86882-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_forwarding
+
+  - name: Disable Accepting Router Advertisements on all IPv6 Interfaces by Default - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90557-0
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_ra
+
+  - name: Disable Accepting Router Advertisements on all IPv6 Interfaces by Default - Comment out any occurrences of net.ipv6.conf.default.accept_ra from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.default.accept_ra
+      replace: '#net.ipv6.conf.default.accept_ra'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90557-0
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_ra
+
+  - name: Disable Accepting Router Advertisements on all IPv6 Interfaces by Default - Ensure sysctl net.ipv6.conf.default.accept_ra is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.default.accept_ra
+      value: '{{ sysctl_net_ipv6_conf_default_accept_ra_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_default_accept_ra.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90557-0
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_ra
+
+  - name: Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv6 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89486-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv6 Interfaces - Comment out any occurrences of net.ipv6.conf.default.accept_redirects from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.default.accept_redirects
+      replace: '#net.ipv6.conf.default.accept_redirects'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89486-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv6 Interfaces - Ensure sysctl net.ipv6.conf.default.accept_redirects is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.default.accept_redirects
+      value: '{{ sysctl_net_ipv6_conf_default_accept_redirects_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_default_accept_redirects.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89486-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on IPv6 Interfaces by Default - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89135-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on IPv6 Interfaces by Default - Comment out any occurrences of net.ipv6.conf.default.accept_source_route from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv6.conf.default.accept_source_route
+      replace: '#net.ipv6.conf.default.accept_source_route'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89135-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on IPv6 Interfaces by Default - Ensure sysctl net.ipv6.conf.default.accept_source_route is set
+    ansible.posix.sysctl:
+      name: net.ipv6.conf.default.accept_source_route
+      value: '{{ sysctl_net_ipv6_conf_default_accept_source_route_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv6_conf_default_accept_source_route.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89135-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-6(b)
+    - NIST-800-53-CM-6.1(iv)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_default_accept_source_route
+
+  - name: Disable Accepting ICMP Redirects for All IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90409-4
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_accept_redirects
+
+  - name: Disable Accepting ICMP Redirects for All IPv4 Interfaces - Comment out any occurrences of net.ipv4.conf.all.accept_redirects from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.all.accept_redirects
+      replace: '#net.ipv4.conf.all.accept_redirects'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90409-4
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_accept_redirects
+
+  - name: Disable Accepting ICMP Redirects for All IPv4 Interfaces - Ensure sysctl net.ipv4.conf.all.accept_redirects is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.all.accept_redirects
+      value: '{{ sysctl_net_ipv4_conf_all_accept_redirects_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_all_accept_redirects.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90409-4
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90165-2
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv4 Interfaces - Comment out any occurrences of net.ipv4.conf.all.accept_source_route from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.all.accept_source_route
+      replace: '#net.ipv4.conf.all.accept_source_route'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90165-2
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on all IPv4 Interfaces - Ensure sysctl net.ipv4.conf.all.accept_source_route is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.all.accept_source_route
+      value: '{{ sysctl_net_ipv4_conf_all_accept_source_route_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_all_accept_source_route.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90165-2
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_accept_source_route
+
+  - name: Disable Kernel Parameter for IPv4 Forwarding on all IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87420-6
+    - NIST-800-53-CM-6(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_forwarding
+
+  - name: Disable Kernel Parameter for IPv4 Forwarding on all IPv4 Interfaces - Comment out any occurrences of net.ipv4.conf.all.forwarding from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.all.forwarding
+      replace: '#net.ipv4.conf.all.forwarding'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87420-6
+    - NIST-800-53-CM-6(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_forwarding
+
+  - name: Disable Kernel Parameter for IPv4 Forwarding on all IPv4 Interfaces - Ensure sysctl net.ipv4.conf.all.forwarding is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.all.forwarding
+      value: '{{ sysctl_net_ipv4_conf_all_forwarding_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_all_forwarding.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87420-6
+    - NIST-800-53-CM-6(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_forwarding
+
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88689-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_rp_filter
+
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces - Comment out any occurrences of net.ipv4.conf.all.rp_filter from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.all.rp_filter
+      replace: '#net.ipv4.conf.all.rp_filter'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88689-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_rp_filter
+
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces - Ensure sysctl net.ipv4.conf.all.rp_filter is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.all.rp_filter
+      value: '{{ sysctl_net_ipv4_conf_all_rp_filter_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_all_rp_filter.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88689-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_rp_filter
+
+  - name: Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86820-8
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv4 Interfaces - Comment out any occurrences of net.ipv4.conf.default.accept_redirects from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.default.accept_redirects
+      replace: '#net.ipv4.conf.default.accept_redirects'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86820-8
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting ICMP Redirects by Default on IPv4 Interfaces - Ensure sysctl net.ipv4.conf.default.accept_redirects is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.default.accept_redirects
+      value: '{{ sysctl_net_ipv4_conf_default_accept_redirects_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_default_accept_redirects.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86820-8
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_accept_redirects
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on IPv4 Interfaces by Default - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88071-6
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on IPv4 Interfaces by Default - Comment out any occurrences of net.ipv4.conf.default.accept_source_route from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.default.accept_source_route
+      replace: '#net.ipv4.conf.default.accept_source_route'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88071-6
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_accept_source_route
+
+  - name: Disable Kernel Parameter for Accepting Source-Routed Packets on IPv4 Interfaces by Default - Ensure sysctl net.ipv4.conf.default.accept_source_route is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.default.accept_source_route
+      value: '{{ sysctl_net_ipv4_conf_default_accept_source_route_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_default_accept_source_route.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88071-6
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_accept_source_route
+
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87424-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_rp_filter
+
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default - Comment out any occurrences of net.ipv4.conf.default.rp_filter from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.default.rp_filter
+      replace: '#net.ipv4.conf.default.rp_filter'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87424-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_rp_filter
+
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default - Ensure sysctl net.ipv4.conf.default.rp_filter is set
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.default.rp_filter
+      value: '{{ sysctl_net_ipv4_conf_default_rp_filter_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_default_rp_filter.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87424-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_rp_filter
+
+  - name: Enable Kernel Parameter to Ignore ICMP Broadcast Echo Requests on IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86918-0
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_icmp_echo_ignore_broadcasts
+
+  - name: Enable Kernel Parameter to Ignore ICMP Broadcast Echo Requests on IPv4 Interfaces - Comment out any occurrences of net.ipv4.icmp_echo_ignore_broadcasts from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.icmp_echo_ignore_broadcasts
+      replace: '#net.ipv4.icmp_echo_ignore_broadcasts'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86918-0
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_icmp_echo_ignore_broadcasts
+
+  - name: Enable Kernel Parameter to Ignore ICMP Broadcast Echo Requests on IPv4 Interfaces - Ensure sysctl net.ipv4.icmp_echo_ignore_broadcasts is set
+    ansible.posix.sysctl:
+      name: net.ipv4.icmp_echo_ignore_broadcasts
+      value: '{{ sysctl_net_ipv4_icmp_echo_ignore_broadcasts_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_icmp_echo_ignore_broadcasts.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86918-0
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_icmp_echo_ignore_broadcasts
+
+  - name: Enable Kernel Parameter to Ignore Bogus ICMP Error Responses on IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87841-3
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - reboot_required
+    - sysctl_net_ipv4_icmp_ignore_bogus_error_responses
+    - unknown_severity
+
+  - name: Enable Kernel Parameter to Ignore Bogus ICMP Error Responses on IPv4 Interfaces - Comment out any occurrences of net.ipv4.icmp_ignore_bogus_error_responses from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.icmp_ignore_bogus_error_responses
+      replace: '#net.ipv4.icmp_ignore_bogus_error_responses'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87841-3
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - reboot_required
+    - sysctl_net_ipv4_icmp_ignore_bogus_error_responses
+    - unknown_severity
+
+  - name: Enable Kernel Parameter to Ignore Bogus ICMP Error Responses on IPv4 Interfaces - Ensure sysctl net.ipv4.icmp_ignore_bogus_error_responses is set
+    ansible.posix.sysctl:
+      name: net.ipv4.icmp_ignore_bogus_error_responses
+      value: '{{ sysctl_net_ipv4_icmp_ignore_bogus_error_responses_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_icmp_ignore_bogus_error_responses.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87841-3
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - PCI-DSS-Req-1.4.3
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - reboot_required
+    - sysctl_net_ipv4_icmp_ignore_bogus_error_responses
+    - unknown_severity
+
+  - name: Configure Kernel to Rate Limit Sending of Duplicate TCP Acknowledgments - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86242-5
+    - NIST-800-53-SC-5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_tcp_invalid_ratelimit
+
+  - name: Configure Kernel to Rate Limit Sending of Duplicate TCP Acknowledgments - Comment out any occurrences of net.ipv4.tcp_invalid_ratelimit from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.tcp_invalid_ratelimit
+      replace: '#net.ipv4.tcp_invalid_ratelimit'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86242-5
+    - NIST-800-53-SC-5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_tcp_invalid_ratelimit
+
+  - name: Configure Kernel to Rate Limit Sending of Duplicate TCP Acknowledgments - Ensure sysctl net.ipv4.tcp_invalid_ratelimit is set
+    ansible.posix.sysctl:
+      name: net.ipv4.tcp_invalid_ratelimit
+      value: '{{ sysctl_net_ipv4_tcp_invalid_ratelimit_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_tcp_invalid_ratelimit.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86242-5
+    - NIST-800-53-SC-5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_tcp_invalid_ratelimit
+
+  - name: Enable Kernel Parameter to Use TCP Syncookies on Network Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88084-9
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5(1)
+    - NIST-800-53-SC-5(2)
+    - NIST-800-53-SC-5(3)(a)
+    - PCI-DSS-Req-1.4.1
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_tcp_syncookies
+
+  - name: Enable Kernel Parameter to Use TCP Syncookies on Network Interfaces - Comment out any occurrences of net.ipv4.tcp_syncookies from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.tcp_syncookies
+      replace: '#net.ipv4.tcp_syncookies'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88084-9
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5(1)
+    - NIST-800-53-SC-5(2)
+    - NIST-800-53-SC-5(3)(a)
+    - PCI-DSS-Req-1.4.1
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_tcp_syncookies
+
+  - name: Enable Kernel Parameter to Use TCP Syncookies on Network Interfaces - Ensure sysctl net.ipv4.tcp_syncookies is set
+    ansible.posix.sysctl:
+      name: net.ipv4.tcp_syncookies
+      value: '{{ sysctl_net_ipv4_tcp_syncookies_value }}'
+      sysctl_file: /etc/sysctl.d/net_ipv4_tcp_syncookies.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88084-9
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5(1)
+    - NIST-800-53-SC-5(2)
+    - NIST-800-53-SC-5(3)(a)
+    - PCI-DSS-Req-1.4.1
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_tcp_syncookies
+
+  - name: Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88360-3
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_send_redirects
+
+  - name: Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces - Comment out any occurrences of net.ipv4.conf.all.send_redirects from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.all.send_redirects
+      replace: '#net.ipv4.conf.all.send_redirects'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88360-3
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_send_redirects
+
+  - name: Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces - Ensure sysctl net.ipv4.conf.all.send_redirects is set to 0
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.all.send_redirects
+      value: '0'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_all_send_redirects.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88360-3
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_all_send_redirects
+
+  - name: Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces by Default - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89177-0
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_send_redirects
+
+  - name: Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces by Default - Comment out any occurrences of net.ipv4.conf.default.send_redirects from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.conf.default.send_redirects
+      replace: '#net.ipv4.conf.default.send_redirects'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89177-0
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_send_redirects
+
+  - name: Disable Kernel Parameter for Sending ICMP Redirects on all IPv4 Interfaces by Default - Ensure sysctl net.ipv4.conf.default.send_redirects is set to 0
+    ansible.posix.sysctl:
+      name: net.ipv4.conf.default.send_redirects
+      value: '0'
+      sysctl_file: /etc/sysctl.d/net_ipv4_conf_default_send_redirects.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89177-0
+    - CJIS-5.10.1.1
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.5
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_conf_default_send_redirects
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Disable Kernel Parameter for IP Forwarding on IPv4 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87377-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.3.1
+    - PCI-DSS-Req-1.3.2
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_ip_forward
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Disable Kernel Parameter for IP Forwarding on IPv4 Interfaces - Comment out any occurrences of net.ipv4.ip_forward from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.ipv4.ip_forward
+      replace: '#net.ipv4.ip_forward'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87377-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.3.1
+    - PCI-DSS-Req-1.3.2
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_ip_forward
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Disable Kernel Parameter for IP Forwarding on IPv4 Interfaces - Ensure sysctl net.ipv4.ip_forward is set to 0
+    ansible.posix.sysctl:
+      name: net.ipv4.ip_forward
+      value: '0'
+      sysctl_file: /etc/sysctl.d/net_ipv4_ip_forward.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87377-8
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-5
+    - NIST-800-53-SC-7(a)
+    - PCI-DSS-Req-1.3.1
+    - PCI-DSS-Req-1.3.2
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.3
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv4_ip_forward
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'can' is disabled
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/can.conf
+      regexp: install\s+can
+      line: install can /bin/false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89282-8
+    - NIST-800-53-AC-18
+    - disable_strategy
+    - kernel_module_can_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'can' is blacklisted
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/can.conf
+      regexp: ^blacklist can$
+      line: blacklist can
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89282-8
+    - NIST-800-53-AC-18
+    - disable_strategy
+    - kernel_module_can_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'sctp' is disabled
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/sctp.conf
+      regexp: install\s+sctp
+      line: install sctp /bin/false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90489-6
+    - CJIS-5.10.1
+    - NIST-800-171-3.4.6
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSS-Req-1.4.2
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - kernel_module_sctp_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'sctp' is blacklisted
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/sctp.conf
+      regexp: ^blacklist sctp$
+      line: blacklist sctp
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90489-6
+    - CJIS-5.10.1
+    - NIST-800-171-3.4.6
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - PCI-DSS-Req-1.4.2
+    - PCI-DSSv4-1.4
+    - PCI-DSSv4-1.4.2
+    - disable_strategy
+    - kernel_module_sctp_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'tipc' is disabled
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/tipc.conf
+      regexp: install\s+tipc
+      line: install tipc /bin/false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86569-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - kernel_module_tipc_disabled
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'tipc' is blacklisted
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/tipc.conf
+      regexp: ^blacklist tipc$
+      line: blacklist tipc
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86569-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - kernel_module_tipc_disabled
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'bluetooth' is disabled
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/bluetooth.conf
+      regexp: install\s+bluetooth
+      line: install bluetooth /bin/false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87455-2
+    - CJIS-5.13.1.3
+    - NIST-800-171-3.1.16
+    - NIST-800-53-AC-18(3)
+    - NIST-800-53-AC-18(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - disable_strategy
+    - kernel_module_bluetooth_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'bluetooth' is blacklisted
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/bluetooth.conf
+      regexp: ^blacklist bluetooth$
+      line: blacklist bluetooth
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87455-2
+    - CJIS-5.13.1.3
+    - NIST-800-171-3.1.16
+    - NIST-800-53-AC-18(3)
+    - NIST-800-53-AC-18(a)
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - disable_strategy
+    - kernel_module_bluetooth_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  - name: Enable Kernel Parameter to Enforce DAC on Hardlinks - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86689-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_hardlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Hardlinks - Comment out any occurrences of fs.protected_hardlinks from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*fs.protected_hardlinks
+      replace: '#fs.protected_hardlinks'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86689-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_hardlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Hardlinks - Ensure sysctl fs.protected_hardlinks is set to 1
+    ansible.posix.sysctl:
+      name: fs.protected_hardlinks
+      value: '1'
+      sysctl_file: /etc/sysctl.d/fs_protected_hardlinks.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86689-7
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_hardlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Symlinks - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88796-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_symlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Symlinks - Comment out any occurrences of fs.protected_symlinks from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*fs.protected_symlinks
+      replace: '#fs.protected_symlinks'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88796-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_symlinks
+
+  - name: Enable Kernel Parameter to Enforce DAC on Symlinks - Ensure sysctl fs.protected_symlinks is set to 1
+    ansible.posix.sysctl:
+      name: fs.protected_symlinks
+      value: '1'
+      sysctl_file: /etc/sysctl.d/fs_protected_symlinks.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88796-8
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_fs_protected_symlinks
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'usb-storage' is disabled
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/usb-storage.conf
+      regexp: install\s+usb-storage
+      line: install usb-storage /bin/false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89301-6
+    - NIST-800-171-3.1.21
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - PCI-DSSv4-3.4
+    - PCI-DSSv4-3.4.2
+    - disable_strategy
+    - kernel_module_usb-storage_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Ensure kernel module 'usb-storage' is blacklisted
+    ansible.builtin.lineinfile:
+      create: true
+      dest: /etc/modprobe.d/usb-storage.conf
+      regexp: ^blacklist usb-storage$
+      line: blacklist usb-storage
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89301-6
+    - NIST-800-171-3.1.21
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-MP-7
+    - PCI-DSSv4-3.4
+    - PCI-DSSv4-3.4.2
+    - disable_strategy
+    - kernel_module_usb-storage_disabled
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - dangerous
+
+  - name: Disable storing core dumps - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86714-3
+    - NIST-800-53-SC-7(10)
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_core_pattern
+
+  - name: Disable storing core dumps - Find all files that contain kernel.core_pattern
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.core_pattern\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86714-3
+    - NIST-800-53-SC-7(10)
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_core_pattern
+
+  - name: Disable storing core dumps - Find all files that set kernel.core_pattern to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.core_pattern\s*=\s*\|/bin/false$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86714-3
+    - NIST-800-53-SC-7(10)
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_core_pattern
+
+  - name: Disable storing core dumps - Comment out any occurrences of kernel.core_pattern from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.core_pattern
+      replace: '#kernel.core_pattern'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-86714-3
+    - NIST-800-53-SC-7(10)
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_core_pattern
+
+  - name: Disable storing core dumps - Comment out any occurrences of kernel.core_pattern from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.core_pattern
+      replace: '#kernel.core_pattern'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86714-3
+    - NIST-800-53-SC-7(10)
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_core_pattern
+
+  - name: Disable storing core dumps - Ensure sysctl kernel.core_pattern is set to |/bin/false
+    ansible.posix.sysctl:
+      name: kernel.core_pattern
+      value: '|/bin/false'
+      sysctl_file: /etc/sysctl.d/kernel_core_pattern.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-86714-3
+    - NIST-800-53-SC-7(10)
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_core_pattern
+
+  - name: Restrict Access to Kernel Message Buffer - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89000-4
+    - NIST-800-171-3.1.5
+    - NIST-800-53-SI-11(a)
+    - NIST-800-53-SI-11(b)
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_dmesg_restrict
+
+  - name: Restrict Access to Kernel Message Buffer - Comment out any occurrences of kernel.dmesg_restrict from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.dmesg_restrict
+      replace: '#kernel.dmesg_restrict'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89000-4
+    - NIST-800-171-3.1.5
+    - NIST-800-53-SI-11(a)
+    - NIST-800-53-SI-11(b)
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_dmesg_restrict
+
+  - name: Restrict Access to Kernel Message Buffer - Ensure sysctl kernel.dmesg_restrict is set to 1
+    ansible.posix.sysctl:
+      name: kernel.dmesg_restrict
+      value: '1'
+      sysctl_file: /etc/sysctl.d/kernel_dmesg_restrict.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89000-4
+    - NIST-800-171-3.1.5
+    - NIST-800-53-SI-11(a)
+    - NIST-800-53-SI-11(b)
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_dmesg_restrict
+
+  - name: Disable Kernel Image Loading - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89232-3
+    - NIST-800-53-CM-6
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kexec_load_disabled
+
+  - name: Disable Kernel Image Loading - Comment out any occurrences of kernel.kexec_load_disabled from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.kexec_load_disabled
+      replace: '#kernel.kexec_load_disabled'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89232-3
+    - NIST-800-53-CM-6
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kexec_load_disabled
+
+  - name: Disable Kernel Image Loading - Ensure sysctl kernel.kexec_load_disabled is set to 1
+    ansible.posix.sysctl:
+      name: kernel.kexec_load_disabled
+      value: '1'
+      sysctl_file: /etc/sysctl.d/kernel_kexec_load_disabled.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89232-3
+    - NIST-800-53-CM-6
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kexec_load_disabled
+
+  - name: Disallow kernel profiling by unprivileged users - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90142-1
+    - NIST-800-53-AC-6
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_perf_event_paranoid
+
+  - name: Disallow kernel profiling by unprivileged users - Comment out any occurrences of kernel.perf_event_paranoid from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.perf_event_paranoid
+      replace: '#kernel.perf_event_paranoid'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90142-1
+    - NIST-800-53-AC-6
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_perf_event_paranoid
+
+  - name: Disallow kernel profiling by unprivileged users - Ensure sysctl kernel.perf_event_paranoid is set to 2
+    ansible.posix.sysctl:
+      name: kernel.perf_event_paranoid
+      value: '2'
+      sysctl_file: /etc/sysctl.d/kernel_perf_event_paranoid.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90142-1
+    - NIST-800-53-AC-6
+    - disable_strategy
+    - low_complexity
+    - low_severity
+    - medium_disruption
+    - reboot_required
+    - sysctl_kernel_perf_event_paranoid
+
+  - name: Disable Access to Network bpf() Syscall From Unprivileged Processes - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89405-5
+    - NIST-800-53-AC-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_unprivileged_bpf_disabled
+
+  - name: Disable Access to Network bpf() Syscall From Unprivileged Processes - Comment out any occurrences of kernel.unprivileged_bpf_disabled from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.unprivileged_bpf_disabled
+      replace: '#kernel.unprivileged_bpf_disabled'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89405-5
+    - NIST-800-53-AC-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_unprivileged_bpf_disabled
+
+  - name: Disable Access to Network bpf() Syscall From Unprivileged Processes - Ensure sysctl kernel.unprivileged_bpf_disabled is set to 1
+    ansible.posix.sysctl:
+      name: kernel.unprivileged_bpf_disabled
+      value: '1'
+      sysctl_file: /etc/sysctl.d/kernel_unprivileged_bpf_disabled.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89405-5
+    - NIST-800-53-AC-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_unprivileged_bpf_disabled
+
+  - name: Restrict usage of ptrace to descendant processes - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88785-1
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_yama_ptrace_scope
+
+  - name: Restrict usage of ptrace to descendant processes - Find all files that contain kernel.yama.ptrace_scope
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.yama.ptrace_scope\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88785-1
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_yama_ptrace_scope
+
+  - name: Restrict usage of ptrace to descendant processes - Find all files that set kernel.yama.ptrace_scope to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.yama.ptrace_scope\s*=\s*1$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88785-1
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_yama_ptrace_scope
+
+  - name: Restrict usage of ptrace to descendant processes - Comment out any occurrences of kernel.yama.ptrace_scope from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.yama.ptrace_scope
+      replace: '#kernel.yama.ptrace_scope'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-88785-1
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_yama_ptrace_scope
+
+  - name: Restrict usage of ptrace to descendant processes - Comment out any occurrences of kernel.yama.ptrace_scope from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.yama.ptrace_scope
+      replace: '#kernel.yama.ptrace_scope'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88785-1
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_yama_ptrace_scope
+
+  - name: Restrict usage of ptrace to descendant processes - Ensure sysctl kernel.yama.ptrace_scope is set to 1
+    ansible.posix.sysctl:
+      name: kernel.yama.ptrace_scope
+      value: '1'
+      sysctl_file: /etc/sysctl.d/kernel_yama_ptrace_scope.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88785-1
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_yama_ptrace_scope
+
+  - name: Harden the operation of the BPF just-in-time compiler - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89631-6
+    - NIST-800-53-CM-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_core_bpf_jit_harden
+
+  - name: Harden the operation of the BPF just-in-time compiler - Comment out any occurrences of net.core.bpf_jit_harden from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*net.core.bpf_jit_harden
+      replace: '#net.core.bpf_jit_harden'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89631-6
+    - NIST-800-53-CM-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_core_bpf_jit_harden
+
+  - name: Harden the operation of the BPF just-in-time compiler - Ensure sysctl net.core.bpf_jit_harden is set to 2
+    ansible.posix.sysctl:
+      name: net.core.bpf_jit_harden
+      value: '2'
+      sysctl_file: /etc/sysctl.d/net_core_bpf_jit_harden.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-89631-6
+    - NIST-800-53-CM-6
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_core_bpf_jit_harden
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Disable acquiring, saving, and processing core dumps - Collect systemd Socket Units Present in the System
+    ansible.builtin.command:
+      cmd: systemctl -q list-unit-files --type socket
+    register: result_systemd_unit_files
+    changed_when: false
+    check_mode: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-90438-3
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - service_systemd-coredump_disabled
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Disable acquiring, saving, and processing core dumps - Ensure systemd-coredump.socket is Masked
+    ansible.builtin.systemd:
+      name: systemd-coredump.socket
+      state: stopped
+      enabled: false
+      masked: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - result_systemd_unit_files.stdout_lines is search("systemd-coredump.socket")
+    tags:
+    - CCE-90438-3
+    - NIST-800-53-SC-7(10)
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - service_systemd-coredump_disabled
+    - dangerous
+
+  - name: Disable core dump backtraces - Search for a section in files
+    ansible.builtin.find:
+      paths: '{{item.path}}'
+      patterns: '{{item.pattern}}'
+      contains: ^\s*\[Coredump\]
+      read_whole_file: true
+      use_regex: true
+    register: systemd_dropin_files_with_section
+    loop:
+    - path: '{{ ''/etc/systemd/coredump.conf'' | dirname }}'
+      pattern: '{{ ''/etc/systemd/coredump.conf'' | basename | regex_escape }}'
+    - path: /etc/systemd/coredump.conf.d
+      pattern: .*\.conf
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    tags:
+    - CCE-88825-5
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_backtraces
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable core dump backtraces - Count number of files which contain the correct section
+    ansible.builtin.set_fact:
+      count_of_systemd_dropin_files_with_section: '{{systemd_dropin_files_with_section.results | map(attribute=''matched'') | list | map(''int'') | sum}}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    tags:
+    - CCE-88825-5
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_backtraces
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable core dump backtraces - Add missing configuration to correct section
+    community.general.ini_file:
+      path: '{{item}}'
+      section: Coredump
+      option: ProcessSizeMax
+      value: '0'
+      state: present
+      no_extra_spaces: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    - count_of_systemd_dropin_files_with_section | int > 0
+    loop: '{{systemd_dropin_files_with_section.results | sum(attribute=''files'', start=[]) | map(attribute=''path'') | list }}'
+    tags:
+    - CCE-88825-5
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_backtraces
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable core dump backtraces - Add configuration to new remediation file
+    community.general.ini_file:
+      path: /etc/systemd/coredump.conf.d/complianceascode_hardening.conf
+      section: Coredump
+      option: ProcessSizeMax
+      value: '0'
+      state: present
+      no_extra_spaces: true
+      create: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    - count_of_systemd_dropin_files_with_section | int == 0
+    tags:
+    - CCE-88825-5
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_backtraces
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable storing core dump - Search for a section in files
+    ansible.builtin.find:
+      paths: '{{item.path}}'
+      patterns: '{{item.pattern}}'
+      contains: ^\s*\[Coredump\]
+      read_whole_file: true
+      use_regex: true
+    register: systemd_dropin_files_with_section
+    loop:
+    - path: '{{ ''/etc/systemd/coredump.conf'' | dirname }}'
+      pattern: '{{ ''/etc/systemd/coredump.conf'' | basename | regex_escape }}'
+    - path: /etc/systemd/coredump.conf.d
+      pattern: .*\.conf
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    tags:
+    - CCE-88732-3
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_storage
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable storing core dump - Count number of files which contain the correct section
+    ansible.builtin.set_fact:
+      count_of_systemd_dropin_files_with_section: '{{systemd_dropin_files_with_section.results | map(attribute=''matched'') | list | map(''int'') | sum}}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    tags:
+    - CCE-88732-3
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_storage
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable storing core dump - Add missing configuration to correct section
+    community.general.ini_file:
+      path: '{{item}}'
+      section: Coredump
+      option: Storage
+      value: none
+      state: present
+      no_extra_spaces: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    - count_of_systemd_dropin_files_with_section | int > 0
+    loop: '{{systemd_dropin_files_with_section.results | sum(attribute=''files'', start=[]) | map(attribute=''path'') | list }}'
+    tags:
+    - CCE-88732-3
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_storage
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Disable storing core dump - Add configuration to new remediation file
+    community.general.ini_file:
+      path: /etc/systemd/coredump.conf.d/complianceascode_hardening.conf
+      section: Coredump
+      option: Storage
+      value: none
+      state: present
+      no_extra_spaces: true
+      create: true
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"systemd" in ansible_facts.packages'
+    - count_of_systemd_dropin_files_with_section | int == 0
+    tags:
+    - CCE-88732-3
+    - NIST-800-53-CM-6
+    - PCI-DSS-Req-3.2
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - coredump_disable_storage
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
+  - name: Restrict Exposed Kernel Pointer Addresses Access - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88686-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - NIST-800-53-SC-30(5)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kptr_restrict
+
+  - name: Restrict Exposed Kernel Pointer Addresses Access - Find all files that contain kernel.kptr_restrict
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.kptr_restrict\s*=\s*.*$'
+    register: find_all_values
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88686-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - NIST-800-53-SC-30(5)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kptr_restrict
+
+  - name: Restrict Exposed Kernel Pointer Addresses Access - Find all files that set kernel.kptr_restrict to correct value
+    ansible.builtin.shell:
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*kernel.kptr_restrict\s*=\s*{{ sysctl_kernel_kptr_restrict_value }}$'
+    register: find_correct_value
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88686-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - NIST-800-53-SC-30(5)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kptr_restrict
+
+  - name: Restrict Exposed Kernel Pointer Addresses Access - Comment out any occurrences of kernel.kptr_restrict from config files
+    ansible.builtin.replace:
+      path: '{{ item | split(":") | first }}'
+      regexp: ^[\s]*kernel.kptr_restrict
+      replace: '#kernel.kptr_restrict'
+    loop: '{{ find_all_values.stdout_lines }}'
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - find_correct_value.stdout_lines | length == 0 or find_all_values.stdout_lines | length > find_correct_value.stdout_lines | length
+    tags:
+    - CCE-88686-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - NIST-800-53-SC-30(5)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kptr_restrict
+
+  - name: Restrict Exposed Kernel Pointer Addresses Access - Comment out any occurrences of kernel.kptr_restrict from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.kptr_restrict
+      replace: '#kernel.kptr_restrict'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88686-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - NIST-800-53-SC-30(5)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kptr_restrict
+
+  - name: Restrict Exposed Kernel Pointer Addresses Access - Ensure sysctl kernel.kptr_restrict is set
+    ansible.posix.sysctl:
+      name: kernel.kptr_restrict
+      value: '{{ sysctl_kernel_kptr_restrict_value }}'
+      sysctl_file: /etc/sysctl.d/kernel_kptr_restrict.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88686-1
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - NIST-800-53-SC-30(5)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_kptr_restrict
+
+  - name: Enable Randomized Layout of Virtual Address Space - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87876-9
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - PCI-DSS-Req-2.2.1
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_randomize_va_space
+
+  - name: Enable Randomized Layout of Virtual Address Space - Comment out any occurrences of kernel.randomize_va_space from /etc/sysctl.conf
+    ansible.builtin.replace:
+      path: '{{ item }}'
+      regexp: ^[\s]*kernel.randomize_va_space
+      replace: '#kernel.randomize_va_space'
+    with_fileglob:
+    - /etc/sysctl.conf
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87876-9
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - PCI-DSS-Req-2.2.1
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_randomize_va_space
+
+  - name: Enable Randomized Layout of Virtual Address Space - Ensure sysctl kernel.randomize_va_space is set to 2
+    ansible.posix.sysctl:
+      name: kernel.randomize_va_space
+      value: '2'
+      sysctl_file: /etc/sysctl.d/kernel_randomize_va_space.conf
+      state: present
+      reload: true
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-87876-9
+    - NIST-800-171-3.1.7
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-SC-30
+    - NIST-800-53-SC-30(2)
+    - PCI-DSS-Req-2.2.1
+    - PCI-DSSv4-3.3
+    - PCI-DSSv4-3.3.1
+    - PCI-DSSv4-3.3.1.1
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_kernel_randomize_va_space
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if page_poison argument is already present in /etc/default/grub
+    ansible.builtin.slurp:
+      src: /etc/default/grub
+    register: etc_default_grub
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-89086-3
+    - NIST-800-53-CM-6(a)
+    - grub2_page_poison_argument
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Check if page_poison argument is already present
+    ansible.builtin.command: /sbin/grubby --info=ALL
+    register: grubby_info
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-89086-3
+    - NIST-800-53-CM-6(a)
+    - grub2_page_poison_argument
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Update grub defaults and the bootloader menu
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --args="page_poison=1"
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    - (grubby_info.stdout is not search('page_poison=1')) or ((etc_default_grub['content'] | b64decode) is not search('page_poison=1'))
+    tags:
+    - CCE-89086-3
+    - NIST-800-53-CM-6(a)
+    - grub2_page_poison_argument
+    - low_disruption
+    - medium_complexity
+    - medium_severity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Check if audit_backlog_limit argument is already present in /etc/default/grub
+    ansible.builtin.slurp:
+      src: /etc/default/grub
+    register: etc_default_grub
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-88192-0
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-10.7
+    - PCI-DSSv4-10.7.2
+    - grub2_audit_backlog_limit_argument
+    - low_disruption
+    - low_severity
+    - medium_complexity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
+
+  - name: Check if audit_backlog_limit argument is already present
+    ansible.builtin.command: /sbin/grubby --info=ALL
+    register: grubby_info
+    check_mode: false
+    changed_when: false
+    failed_when: false
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    tags:
+    - CCE-88192-0
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-10.7
+    - PCI-DSSv4-10.7.2
+    - grub2_audit_backlog_limit_argument
+    - low_disruption
+    - low_severity
+    - medium_complexity
+    - reboot_required
+    - restrict_strategy
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Update grub defaults and the bootloader menu
+    ansible.builtin.command: /sbin/grubby --update-kernel=ALL --args="audit_backlog_limit={{ var_audit_backlog_limit }}"
+    when:
+    - '"kernel-core" in ansible_facts.packages'
+    - '"grub2-common" in ansible_facts.packages'
+    - (grubby_info.stdout is not search('audit_backlog_limit=' ~ var_audit_backlog_limit)) or ((etc_default_grub['content'] | b64decode) is not search('audit_backlog_limit=' ~ var_audit_backlog_limit))
+    tags:
+    - CCE-88192-0
+    - NIST-800-53-CM-6(a)
+    - PCI-DSSv4-10.7
+    - PCI-DSSv4-10.7.2
+    - grub2_audit_backlog_limit_argument
+    - low_disruption
+    - low_severity
+    - medium_complexity
+    - reboot_required
+    - restrict_strategy
+    - dangerous
