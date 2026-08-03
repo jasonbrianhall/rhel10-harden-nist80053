@@ -4,7 +4,11 @@ VM_IP_FILE=".vm_ip"
 
 # If no argument, boot the VM
 if [ -z "$1" ]; then
-    ansible-playbook kvm_boot_playbook.yml --ask-become-pass -e "save_ip_file=$VM_IP_FILE"
+    read -p "RHEL subscription username: " RHEL_USER
+    read -sp "RHEL subscription password: " RHEL_PASS
+    echo
+    ansible-playbook kvm_boot_playbook.yml --ask-become-pass -e "save_ip_file=$VM_IP_FILE" \
+        -e "rhel_username=${RHEL_USER}" -e "rhel_password=${RHEL_PASS}"
     
     if [ -z "$VM_IP" ]; then
         echo "Error: Could not extract VM IP from playbook output"

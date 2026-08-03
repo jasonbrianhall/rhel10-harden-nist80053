@@ -18,6 +18,10 @@
     # Hardening playbooks - set to true to run, false to skip
     run_verification: true
     hardening_dir: support
+    
+    # Subscription Manager credentials
+    rhel_username: "{{ lookup('env', 'RHEL_USER') }}"
+    rhel_password: "{{ lookup('env', 'RHEL_PASS') }}"
 
   tasks:
     - name: Check if .vm_ip file exists
@@ -192,6 +196,12 @@
         create: yes
         mode: '0440'
         validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Register with subscription-manager
+      command: |
+        subscription-manager register --username {{ rhel_username }} --password {{ rhel_password }} --auto-attach
+      environment:
+        LANG: en_US.UTF-8
 
     - name: Verify VM is responsive
       debug:
