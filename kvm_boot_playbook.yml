@@ -168,7 +168,6 @@
   vars:
     verification_playbook: verify.yml
     run_verification: true
-    # Hardening playbooks - set to true to run, false to skip
   tasks:
     - name: Verify VM is responsive
       debug:
@@ -180,76 +179,13 @@
       ignore_errors: yes
       when: run_verification
 
-- name: Run RHEL STIG hardening (as cloud-user)
-  hosts: new_vms
+- name: Display hardening instructions
+  hosts: localhost
   gather_facts: no
-  remote_user: cloud-user
-  become: no
-  vars:
-    # Hardening playbooks - set to true to run, false to skip
-    run_ssh_hardening: true
-    run_accounts_and_pam_hardening: false
-    run_audit_and_logging_hardening: false
-    run_selinux_hardening: false
-    run_filesystem_and_mounts_hardening: false
-    run_kernel_and_bootloader_hardening: false
-    run_network_and_firewall_hardening: false
-    run_software_and_services_hardening: false
-    run_session_and_display_hardening: false
-    run_time_sync_and_mail_hardening: false
-    run_file_integrity_hardening: false
-    run_identity_and_smartcard_hardening: false
-    run_uncategorized_hardening: false
-    hardening_dir: support
   tasks:
-    - name: Include SSH hardening
-      include_tasks: "{{ hardening_dir }}/ssh.yml"
-      when: run_ssh_hardening
-
-    - name: Include accounts and PAM hardening
-      include_tasks: "{{ hardening_dir }}/accounts_and_pam.yml"
-      when: run_accounts_and_pam_hardening
-
-    - name: Include audit and logging hardening
-      include_tasks: "{{ hardening_dir }}/audit_and_logging.yml"
-      when: run_audit_and_logging_hardening
-
-    - name: Include SELinux hardening
-      include_tasks: "{{ hardening_dir }}/selinux.yml"
-      when: run_selinux_hardening
-
-    - name: Include filesystem and mounts hardening
-      include_tasks: "{{ hardening_dir }}/filesystem_and_mounts.yml"
-      when: run_filesystem_and_mounts_hardening
-
-    - name: Include kernel and bootloader hardening
-      include_tasks: "{{ hardening_dir }}/kernel_and_bootloader.yml"
-      when: run_kernel_and_bootloader_hardening
-
-    - name: Include network and firewall hardening
-      include_tasks: "{{ hardening_dir }}/network_and_firewall.yml"
-      when: run_network_and_firewall_hardening
-
-    - name: Include software and services hardening
-      include_tasks: "{{ hardening_dir }}/software_and_services.yml"
-      when: run_software_and_services_hardening
-
-    - name: Include session and display hardening
-      include_tasks: "{{ hardening_dir }}/session_and_display.yml"
-      when: run_session_and_display_hardening
-
-    - name: Include time sync and mail hardening
-      include_tasks: "{{ hardening_dir }}/time_sync_and_mail.yml"
-      when: run_time_sync_and_mail_hardening
-
-    - name: Include file integrity hardening
-      include_tasks: "{{ hardening_dir }}/file_integrity.yml"
-      when: run_file_integrity_hardening
-
-    - name: Include identity and smartcard hardening
-      include_tasks: "{{ hardening_dir }}/identity_and_smartcard.yml"
-      when: run_identity_and_smartcard_hardening
-
-    - name: Include uncategorized hardening
-      include_tasks: "{{ hardening_dir }}/uncategorized.yml"
-      when: run_uncategorized_hardening
+    - name: Output VM details for hardening
+      debug:
+        msg: |
+          VM is ready for hardening!
+          Run hardening playbooks with: ./run.sh hardening
+          Or run individual playbooks from the support/ directory
