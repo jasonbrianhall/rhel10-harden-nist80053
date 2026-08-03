@@ -1273,7 +1273,7 @@
   # disable a service, or otherwise change system behavior in a
   # breaking way. Review before running.
   - name: Enable SSH Server firewalld Firewall Exception - Ensure firewalld and NetworkManager packages are installed
-    ansible.builtin.package:
+    package:
       name: '{{ item }}'
       state: present
     with_items:
