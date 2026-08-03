@@ -2,9 +2,10 @@
 - name: Clone RHEL KVM image, boot VM, and get IP address
   hosts: localhost
   gather_facts: yes
+  become: yes
   vars:
     # Configuration - customize these
-    source_image: "/var/lib/libvirt/images/rhel-base.qcow2"
+    source_image: "/var/lib/libvirt/images/rhel10-test.qcow2"
     target_image: "/var/lib/libvirt/images/{{ vm_name }}.qcow2"
     vm_name: "rhel-hardened-{{ ansible_date_time.iso8601_basic_short }}"
     vm_memory: 2048
@@ -172,54 +173,54 @@
   vars:
     hardening_dir: "{{ hostvars['localhost'].hardening_dir }}"
   tasks:
-    - name: Import SSH hardening
-      import_tasks: "{{ hardening_dir }}/ssh.yml"
+    - name: Include SSH hardening
+      include_tasks: "{{ hardening_dir }}/ssh.yml"
       when: hostvars['localhost'].run_ssh_hardening
 
-    - name: Import accounts and PAM hardening
-      import_tasks: "{{ hardening_dir }}/accounts_and_pam.yml"
+    - name: Include accounts and PAM hardening
+      include_tasks: "{{ hardening_dir }}/accounts_and_pam.yml"
       when: hostvars['localhost'].run_accounts_and_pam_hardening
 
-    - name: Import audit and logging hardening
-      import_tasks: "{{ hardening_dir }}/audit_and_logging.yml"
+    - name: Include audit and logging hardening
+      include_tasks: "{{ hardening_dir }}/audit_and_logging.yml"
       when: hostvars['localhost'].run_audit_and_logging_hardening
 
-    - name: Import SELinux hardening
-      import_tasks: "{{ hardening_dir }}/selinux.yml"
+    - name: Include SELinux hardening
+      include_tasks: "{{ hardening_dir }}/selinux.yml"
       when: hostvars['localhost'].run_selinux_hardening
 
-    - name: Import filesystem and mounts hardening
-      import_tasks: "{{ hardening_dir }}/filesystem_and_mounts.yml"
+    - name: Include filesystem and mounts hardening
+      include_tasks: "{{ hardening_dir }}/filesystem_and_mounts.yml"
       when: hostvars['localhost'].run_filesystem_and_mounts_hardening
 
-    - name: Import kernel and bootloader hardening
-      import_tasks: "{{ hardening_dir }}/kernel_and_bootloader.yml"
+    - name: Include kernel and bootloader hardening
+      include_tasks: "{{ hardening_dir }}/kernel_and_bootloader.yml"
       when: hostvars['localhost'].run_kernel_and_bootloader_hardening
 
-    - name: Import network and firewall hardening
-      import_tasks: "{{ hardening_dir }}/network_and_firewall.yml"
+    - name: Include network and firewall hardening
+      include_tasks: "{{ hardening_dir }}/network_and_firewall.yml"
       when: hostvars['localhost'].run_network_and_firewall_hardening
 
-    - name: Import software and services hardening
-      import_tasks: "{{ hardening_dir }}/software_and_services.yml"
+    - name: Include software and services hardening
+      include_tasks: "{{ hardening_dir }}/software_and_services.yml"
       when: hostvars['localhost'].run_software_and_services_hardening
 
-    - name: Import session and display hardening
-      import_tasks: "{{ hardening_dir }}/session_and_display.yml"
+    - name: Include session and display hardening
+      include_tasks: "{{ hardening_dir }}/session_and_display.yml"
       when: hostvars['localhost'].run_session_and_display_hardening
 
-    - name: Import time sync and mail hardening
-      import_tasks: "{{ hardening_dir }}/time_sync_and_mail.yml"
+    - name: Include time sync and mail hardening
+      include_tasks: "{{ hardening_dir }}/time_sync_and_mail.yml"
       when: hostvars['localhost'].run_time_sync_and_mail_hardening
 
-    - name: Import file integrity hardening
-      import_tasks: "{{ hardening_dir }}/file_integrity.yml"
+    - name: Include file integrity hardening
+      include_tasks: "{{ hardening_dir }}/file_integrity.yml"
       when: hostvars['localhost'].run_file_integrity_hardening
 
-    - name: Import identity and smartcard hardening
-      import_tasks: "{{ hardening_dir }}/identity_and_smartcard.yml"
+    - name: Include identity and smartcard hardening
+      include_tasks: "{{ hardening_dir }}/identity_and_smartcard.yml"
       when: hostvars['localhost'].run_identity_and_smartcard_hardening
 
-    - name: Import uncategorized hardening
-      import_tasks: "{{ hardening_dir }}/uncategorized.yml"
+    - name: Include uncategorized hardening
+      include_tasks: "{{ hardening_dir }}/uncategorized.yml"
       when: hostvars['localhost'].run_uncategorized_hardening

@@ -1,0 +1,3 @@
+# Requires libvirt-devel
+libvirt-python
+lxml
