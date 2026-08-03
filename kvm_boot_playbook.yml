@@ -160,6 +160,12 @@
           Run hardening playbook with:
           ansible-playbook -i {{ rhel_vm_ip }}, hardening.yml
 
+    - name: Save VM IP to file
+      copy:
+        content: "{{ rhel_vm_ip }}"
+        dest: ".vm_ip"
+      delegate_to: localhost
+
 - name: Run verification on new VM (as cloud-user)
   hosts: new_vms
   gather_facts: yes

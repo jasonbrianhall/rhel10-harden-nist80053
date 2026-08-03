@@ -5,10 +5,7 @@ VM_IP_FILE=".vm_ip"
 
 # If no argument, boot the VM
 if [ -z "$1" ]; then
-    ansible-playbook kvm_boot_playbook.yml --ask-become-pass | tee /tmp/ansible_output.txt
-    
-    # Extract VM IP from ansible output
-    VM_IP=$(grep "IP Address:" /tmp/ansible_output.txt | tail -1 | awk '{print $NF}')
+    ansible-playbook kvm_boot_playbook.yml --ask-become-pass -e "save_ip_file=$VM_IP_FILE"
     
     if [ -z "$VM_IP" ]; then
         echo "Error: Could not extract VM IP from playbook output"
