@@ -24,11 +24,12 @@
     var_rekey_limit_size: 1G
     var_rekey_limit_time: 1h
   tasks:
+  - name: Gather the package facts
+    ansible.builtin.package_facts:
+      manager: auto
+
   - name: Enable the OpenSSH Service - Enable service sshd
     block:
-    - name: Gather the package facts
-      ansible.builtin.package_facts:
-        manager: auto
     - name: Enable the OpenSSH Service - Enable Service sshd
       ansible.builtin.systemd:
         name: sshd
@@ -55,12 +56,16 @@
     - no_reboot_needed
     - service_sshd_enabled
     - special_service_block
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
 
   - name: Set the directory_groupowner_sshd_config_d_newgroup variable if represented by gid
     ansible.builtin.set_fact:
       directory_groupowner_sshd_config_d_newgroup: '0'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89991-4
     - NIST-800-53-AC-17(a)
@@ -79,7 +84,9 @@
       follow: false
       state: directory
       group: '{{ directory_groupowner_sshd_config_d_newgroup }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89991-4
     - NIST-800-53-AC-17(a)
@@ -95,7 +102,9 @@
   - name: Set the directory_owner_sshd_config_d_newown variable if represented by uid
     ansible.builtin.set_fact:
       directory_owner_sshd_config_d_newown: '0'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89747-0
     - NIST-800-53-AC-17(a)
@@ -114,7 +123,9 @@
       follow: false
       state: directory
       owner: '{{ directory_owner_sshd_config_d_newown }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89747-0
     - NIST-800-53-AC-17(a)
@@ -133,7 +144,9 @@
     changed_when: false
     failed_when: false
     check_mode: false
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89963-3
     - NIST-800-53-AC-17(a)
@@ -153,7 +166,9 @@
       state: directory
     with_items:
     - '{{ files_found.stdout_lines }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89963-3
     - NIST-800-53-AC-17(a)
@@ -169,7 +184,9 @@
   - name: Set the file_groupowner_sshd_config_newgroup variable if represented by gid
     ansible.builtin.set_fact:
       file_groupowner_sshd_config_newgroup: '0'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86992-5
     - NIST-800-53-AC-17(a)
@@ -186,7 +203,9 @@
     ansible.builtin.stat:
       path: /etc/ssh/sshd_config
     register: file_exists
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86992-5
     - NIST-800-53-AC-17(a)
@@ -222,7 +241,9 @@
   - name: Set the file_groupowner_sshd_drop_in_config_newgroup variable if represented by gid
     ansible.builtin.set_fact:
       file_groupowner_sshd_drop_in_config_newgroup: '0'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86254-0
     - NIST-800-53-AC-17(a)
@@ -241,7 +262,9 @@
     changed_when: false
     failed_when: false
     check_mode: false
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86254-0
     - NIST-800-53-AC-17(a)
@@ -262,7 +285,9 @@
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86254-0
     - NIST-800-53-AC-17(a)
@@ -278,7 +303,9 @@
   - name: Set the file_owner_sshd_config_newown variable if represented by uid
     ansible.builtin.set_fact:
       file_owner_sshd_config_newown: '0'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89829-6
     - NIST-800-53-AC-17(a)
@@ -295,7 +322,9 @@
     ansible.builtin.stat:
       path: /etc/ssh/sshd_config
     register: file_exists
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89829-6
     - NIST-800-53-AC-17(a)
@@ -331,7 +360,9 @@
   - name: Set the file_owner_sshd_drop_in_config_newown variable if represented by uid
     ansible.builtin.set_fact:
       file_owner_sshd_drop_in_config_newown: '0'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86268-0
     - NIST-800-53-AC-17(a)
@@ -350,7 +381,9 @@
     changed_when: false
     failed_when: false
     check_mode: false
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86268-0
     - NIST-800-53-AC-17(a)
@@ -371,7 +404,9 @@
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86268-0
     - NIST-800-53-AC-17(a)
@@ -388,7 +423,9 @@
     ansible.builtin.stat:
       path: /etc/ssh/sshd_config
     register: file_exists
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86264-9
     - NIST-800-53-AC-17(a)
@@ -430,7 +467,9 @@
     changed_when: false
     failed_when: false
     check_mode: false
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86442-1
     - NIST-800-53-AC-17(a)
@@ -450,7 +489,9 @@
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86442-1
     - NIST-800-53-AC-17(a)
@@ -469,7 +510,9 @@
     changed_when: false
     failed_when: false
     check_mode: false
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88018-7
     - NIST-800-171-3.1.13
@@ -493,7 +536,9 @@
     changed_when: false
     failed_when: false
     check_mode: false
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87454-5
     - NIST-800-171-3.1.13
@@ -518,7 +563,9 @@
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87454-5
     - NIST-800-171-3.1.13
@@ -609,7 +656,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86794-5
     - CJIS-5.5.6
@@ -635,7 +684,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "ClientAliveCountMax"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86794-5
     - CJIS-5.5.6
@@ -663,7 +714,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86794-5
     - CJIS-5.5.6
@@ -689,7 +742,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "ClientAliveCountMax"| regex_escape }}\s+{{ var_sshd_set_keepalive }}$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86794-5
     - CJIS-5.5.6
@@ -775,7 +830,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86794-5
     - CJIS-5.5.6
@@ -803,7 +860,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90362-5
     - CJIS-5.5.6
@@ -831,7 +890,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "ClientAliveInterval"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90362-5
     - CJIS-5.5.6
@@ -861,7 +922,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90362-5
     - CJIS-5.5.6
@@ -889,7 +952,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "ClientAliveInterval"| regex_escape }}\s+{{ sshd_idle_timeout_value }}$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90362-5
     - CJIS-5.5.6
@@ -979,7 +1044,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90362-5
     - CJIS-5.5.6
@@ -1009,7 +1076,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88057-5
     - CJIS-5.5.6
@@ -1034,7 +1103,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "HostbasedAuthentication"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88057-5
     - CJIS-5.5.6
@@ -1061,7 +1132,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88057-5
     - CJIS-5.5.6
@@ -1086,7 +1159,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "HostbasedAuthentication"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88057-5
     - CJIS-5.5.6
@@ -1170,7 +1245,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88057-5
     - CJIS-5.5.6
@@ -1199,7 +1276,9 @@
     with_items:
     - firewalld
     - NetworkManager
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89799-1
     - NIST-800-171-3.1.12
@@ -1220,7 +1299,9 @@
   # breaking way. Review before running.
   - name: Enable SSH Server firewalld Firewall Exception - Collect facts about system services
     ansible.builtin.service_facts: null
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89799-1
     - NIST-800-171-3.1.12
@@ -1332,7 +1413,9 @@
       - The service is not started by this remediation in order to prevent connection issues.
       success_msg:
       - Enable SSH Server firewalld Firewall Exception remediation successfully executed
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89799-1
     - NIST-800-171-3.1.12
@@ -1356,7 +1439,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90051-4
     - NIST-800-171-3.1.12
@@ -1377,7 +1462,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "Compression"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90051-4
     - NIST-800-171-3.1.12
@@ -1400,7 +1487,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90051-4
     - NIST-800-171-3.1.12
@@ -1421,7 +1510,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "Compression"| regex_escape }}\s+{{ var_sshd_disable_compression }}$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90051-4
     - NIST-800-171-3.1.12
@@ -1497,7 +1588,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90051-4
     - NIST-800-171-3.1.12
@@ -1520,7 +1613,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86753-1
     - CJIS-5.5.6
@@ -1546,7 +1641,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PermitEmptyPasswords"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86753-1
     - CJIS-5.5.6
@@ -1574,7 +1671,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86753-1
     - CJIS-5.5.6
@@ -1600,7 +1699,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PermitEmptyPasswords"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86753-1
     - CJIS-5.5.6
@@ -1686,7 +1787,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86753-1
     - CJIS-5.5.6
@@ -1714,7 +1817,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89145-7
     - NIST-800-171-3.1.12
@@ -1735,7 +1840,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "GSSAPIAuthentication"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89145-7
     - NIST-800-171-3.1.12
@@ -1758,7 +1865,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89145-7
     - NIST-800-171-3.1.12
@@ -1779,7 +1888,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "GSSAPIAuthentication"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89145-7
     - NIST-800-171-3.1.12
@@ -1855,7 +1966,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89145-7
     - NIST-800-171-3.1.12
@@ -1878,7 +1991,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90591-9
     - NIST-800-171-3.1.12
@@ -1899,7 +2014,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "KerberosAuthentication"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90591-9
     - NIST-800-171-3.1.12
@@ -1922,7 +2039,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90591-9
     - NIST-800-171-3.1.12
@@ -1943,7 +2062,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "KerberosAuthentication"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90591-9
     - NIST-800-171-3.1.12
@@ -2019,7 +2140,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90591-9
     - NIST-800-171-3.1.12
@@ -2042,7 +2165,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87777-9
     - CJIS-5.5.6
@@ -2066,7 +2191,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "IgnoreRhosts"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87777-9
     - CJIS-5.5.6
@@ -2092,7 +2219,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87777-9
     - CJIS-5.5.6
@@ -2116,7 +2245,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "IgnoreRhosts"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87777-9
     - CJIS-5.5.6
@@ -2198,7 +2329,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87777-9
     - CJIS-5.5.6
@@ -2227,7 +2360,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89730-6
     - CJIS-5.5.6
@@ -2260,7 +2395,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PermitRootLogin"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89730-6
     - CJIS-5.5.6
@@ -2295,7 +2432,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89730-6
     - CJIS-5.5.6
@@ -2328,7 +2467,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PermitRootLogin"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89730-6
     - CJIS-5.5.6
@@ -2428,7 +2569,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89730-6
     - CJIS-5.5.6
@@ -2460,7 +2603,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87313-3
     - NIST-800-171-3.1.12
@@ -2481,7 +2626,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "IgnoreUserKnownHosts"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87313-3
     - NIST-800-171-3.1.12
@@ -2504,7 +2651,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87313-3
     - NIST-800-171-3.1.12
@@ -2525,7 +2674,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "IgnoreUserKnownHosts"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87313-3
     - NIST-800-171-3.1.12
@@ -2601,7 +2752,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87313-3
     - NIST-800-171-3.1.12
@@ -2624,7 +2777,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89476-6
     - NIST-800-53-CM-6(b)
@@ -2643,7 +2798,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "X11Forwarding"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89476-6
     - NIST-800-53-CM-6(b)
@@ -2664,7 +2821,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89476-6
     - NIST-800-53-CM-6(b)
@@ -2683,7 +2842,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "X11Forwarding"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89476-6
     - NIST-800-53-CM-6(b)
@@ -2755,7 +2916,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-89476-6
     - NIST-800-53-CM-6(b)
@@ -2776,7 +2939,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87395-0
     - CJIS-5.5.6
@@ -2801,7 +2966,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PermitUserEnvironment"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87395-0
     - CJIS-5.5.6
@@ -2828,7 +2995,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87395-0
     - CJIS-5.5.6
@@ -2853,7 +3022,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PermitUserEnvironment"| regex_escape }}\s+no$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87395-0
     - CJIS-5.5.6
@@ -2937,7 +3108,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87395-0
     - CJIS-5.5.6
@@ -2964,7 +3137,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87045-1
     - PCI-DSSv4-2.2
@@ -2982,7 +3157,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "UsePAM"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87045-1
     - PCI-DSSv4-2.2
@@ -3002,7 +3179,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87045-1
     - PCI-DSSv4-2.2
@@ -3020,7 +3199,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "UsePAM"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87045-1
     - PCI-DSSv4-2.2
@@ -3090,7 +3271,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87045-1
     - PCI-DSSv4-2.2
@@ -3110,7 +3293,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90625-5
     - low_complexity
@@ -3126,7 +3311,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PubkeyAuthentication"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90625-5
     - low_complexity
@@ -3144,7 +3331,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90625-5
     - low_complexity
@@ -3160,7 +3349,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PubkeyAuthentication"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90625-5
     - low_complexity
@@ -3226,7 +3417,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-90625-5
     - low_complexity
@@ -3244,7 +3437,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88037-7
     - NIST-800-171-3.1.12
@@ -3264,7 +3459,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "StrictModes"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88037-7
     - NIST-800-171-3.1.12
@@ -3286,7 +3483,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88037-7
     - NIST-800-171-3.1.12
@@ -3306,7 +3505,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "StrictModes"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88037-7
     - NIST-800-171-3.1.12
@@ -3380,7 +3581,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88037-7
     - NIST-800-171-3.1.12
@@ -3402,7 +3605,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86539-4
     - CJIS-5.5.6
@@ -3425,7 +3630,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "Banner"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86539-4
     - CJIS-5.5.6
@@ -3450,7 +3657,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86539-4
     - CJIS-5.5.6
@@ -3473,7 +3682,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "Banner"| regex_escape }}\s+/etc/issue$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86539-4
     - CJIS-5.5.6
@@ -3553,7 +3764,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86539-4
     - CJIS-5.5.6
@@ -3578,7 +3791,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88362-9
     - NIST-800-53-AC-9
@@ -3596,7 +3811,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PrintLastLog"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88362-9
     - NIST-800-53-AC-9
@@ -3616,7 +3833,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88362-9
     - NIST-800-53-AC-9
@@ -3634,7 +3853,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "PrintLastLog"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88362-9
     - NIST-800-53-AC-9
@@ -3704,7 +3925,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88362-9
     - NIST-800-53-AC-9
@@ -3724,7 +3947,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88356-1
     - configure_strategy
@@ -3740,7 +3965,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "RekeyLimit"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88356-1
     - configure_strategy
@@ -3758,7 +3985,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88356-1
     - configure_strategy
@@ -3774,7 +4003,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "RekeyLimit"| regex_escape }}\s+{{ var_rekey_limit_size }} {{ var_rekey_limit_time }}$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88356-1
     - configure_strategy
@@ -3840,7 +4071,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-88356-1
     - configure_strategy
@@ -3858,7 +4091,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86241-7
     - NIST-800-53-AC-17(1)
@@ -3880,7 +4115,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "LogLevel"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86241-7
     - NIST-800-53-AC-17(1)
@@ -3904,7 +4141,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86241-7
     - NIST-800-53-AC-17(1)
@@ -3926,7 +4165,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "LogLevel"| regex_escape }}\s+VERBOSE$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86241-7
     - NIST-800-53-AC-17(1)
@@ -4004,7 +4245,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86241-7
     - NIST-800-53-AC-17(1)
@@ -4028,7 +4271,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86528-7
     - NIST-800-53-CM-6(b)
@@ -4045,7 +4290,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "X11UseLocalhost"| regex_escape }}\s+
     register: _config_dir_has_parameter
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86528-7
     - NIST-800-53-CM-6(b)
@@ -4064,7 +4311,9 @@
     check_mode: true
     changed_when: false
     register: _config_file_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86528-7
     - NIST-800-53-CM-6(b)
@@ -4081,7 +4330,9 @@
       - /etc/ssh/sshd_config.d
       contains: (?i)^\s*{{ "X11UseLocalhost"| regex_escape }}\s+yes$
     register: _config_dir_correctly
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86528-7
     - NIST-800-53-CM-6(b)
@@ -4149,7 +4400,9 @@
       state: touch
       modification_time: preserve
       access_time: preserve
-    when: '"kernel-core" in ansible_facts.packages'
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86528-7
     - NIST-800-53-CM-6(b)
