@@ -14,9 +14,17 @@
 #   ansible-playbook filesystem_and_mounts.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
   vars:
     var_removable_partition: /dev/cdrom
   tasks:
+
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+  
   - name: Ensure interactive local users have proper permissions on their respective home directories
     ansible.builtin.file:
       path: '{{ item.0.value[4] }}'
