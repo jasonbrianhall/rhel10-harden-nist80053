@@ -21,21 +21,10 @@
   vars:
     var_system_crypto_policy: FIPS
   tasks:
-  - name: Gather list of packages
+
+  - name: Gather package facts
     ansible.builtin.package_facts:
       manager: auto
-    when: '"kernel-core" in ansible_facts.packages'
-    tags:
-    - CCE-89640-7
-    - NIST-800-53-CM-6(a)
-    - NIST-800-53-SI-7
-    - NIST-800-53-SI-7(1)
-    - aide_verify_acls
-    - low_complexity
-    - low_disruption
-    - low_severity
-    - no_reboot_needed
-    - restrict_strategy
 
   - name: Set the file_audit_tools_group_ownership_newgroup variable if represented by gid
     ansible.builtin.set_fact:
