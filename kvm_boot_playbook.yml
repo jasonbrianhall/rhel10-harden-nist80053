@@ -198,7 +198,7 @@
 
     - name: Register with subscription-manager
       command: |
-        subscription-manager register --username {{ rhel_username }} --password {{ rhel_password }}
+        subscription-manager register --username {{ rhel_username }} --password {{ rhel_password }} --force
       environment:
         LANG: en_US.UTF-8
 
