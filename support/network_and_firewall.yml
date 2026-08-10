@@ -37,6 +37,12 @@
     sysctl_net_ipv4_tcp_invalid_ratelimit_value: '500'
     sysctl_net_ipv4_tcp_syncookies_value: '1'
     var_networkmanager_dns_mode: default
+    sysctl_paths:
+      - /etc/sysctl.conf
+      - /etc/sysctl.d
+      - /run/sysctl.d
+      - /usr/lib/sysctl.d
+
   tasks:
 
   - name: Gather package facts
