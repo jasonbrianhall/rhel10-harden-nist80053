@@ -51,6 +51,44 @@
     - reboot_required
     - sysctl_net_ipv6_conf_all_accept_ra
 
+  - name: Ensure All World-Writable Directories Are Owned by root User - Define Excluded (Non-Local) File Systems and Paths
+    ansible.builtin.set_fact:
+      excluded_fstypes:
+      - afs
+      - autofs
+      - ceph
+      - cifs
+      - smb3
+      - smbfs
+      - sshfs
+      - ncpfs
+      - ncp
+      - nfs
+      - nfs4
+      - gfs
+      - gfs2
+      - glusterfs
+      - gpfs
+      - pvfs2
+      - ocfs2
+      - lustre
+      - davfs
+      - fuse.sshfs
+      excluded_paths:
+      - dev
+      - proc
+      - run
+      - sys
+      search_paths: []
+    tags:
+    - CCE-89514-4
+    - dir_perms_world_writable_root_owned
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - no_reboot_needed
+    - restrict_strategy
+
   - name: Set the file_audit_tools_group_ownership_newgroup variable if represented by gid
     ansible.builtin.set_fact:
       file_audit_tools_group_ownership_newgroup: '0'
