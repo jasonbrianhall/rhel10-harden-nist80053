@@ -45,6 +45,8 @@
     var_user_initialization_files_regex: ^\.[\w\- ]+$
     var_accounts_user_umask: '077'
     var_postfix_root_mail_alias: system.administrator@mail.mil
+    current_user: "{{ ansible_user_id }}"
+
   tasks:
 
   - name: Gather package facts
@@ -124,26 +126,27 @@
     - restrict_strategy
     - sudo_remove_nopasswd
 
-  - name: Remove lines containing NOPASSWD from sudoers files
+  - name: Remove NOPASSWD except for current user
     ansible.builtin.replace:
-      regexp: (^(?!#).*[\s]+NOPASSWD[\s]*\:.*$)
-      replace: '# \g<1>'
+      regexp: '^(?!#).*{{ current_user }}.*NOPASSWD.*$'
+      replace: '# \g<0>'
       path: '{{ item.path }}'
       validate: /usr/sbin/visudo -cf %s
     with_items:
-    - path: /etc/sudoers
-    - '{{ sudoers.files }}'
+      - path: /etc/sudoers
+      - '{{ sudoers.files }}'
     when: '"kernel-core" in ansible_facts.packages'
     tags:
-    - CCE-87015-4
-    - NIST-800-53-CM-6(a)
-    - NIST-800-53-IA-11
-    - low_complexity
-    - low_disruption
-    - medium_severity
-    - no_reboot_needed
-    - restrict_strategy
-    - sudo_remove_nopasswd
+      - CCE-87015-4
+      - NIST-800-53-CM-6(a)
+      - NIST-800-53-IA-11
+      - low_complexity
+      - low_disruption
+      - medium_severity
+      - no_reboot_needed
+      - restrict_strategy
+      - sudo_remove_nopasswd
+
 
   # DANGEROUS: this task can lock out access, remove software,
   # disable a service, or otherwise change system behavior in a
