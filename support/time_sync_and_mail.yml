@@ -14,9 +14,29 @@
 #   ansible-playbook time_sync_and_mail.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
+
   vars:
     var_multiple_time_servers: 0.us.pool.ntp.mil
   tasks:
+  - name: Gather the package facts
+    package_facts:
+      manager: auto
+    tags:
+    - CCE-90477-1
+    - CJIS-5.10.1.3
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-11.5
+    - PCI-DSSv4-11.5.2
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+    - package_aide_installed
+  
   - name: Prevent Unrestricted Mail Relaying
     block:
     - name: Check for duplicate values
