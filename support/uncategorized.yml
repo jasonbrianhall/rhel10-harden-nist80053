@@ -26,6 +26,12 @@
     ansible.builtin.package_facts:
       manager: auto
 
+  - name: Gather passwd entries
+    ansible.builtin.getent:
+      database: passwd
+    when: '"kernel-core" in ansible_facts.packages'
+
+
   - name: Set the file_audit_tools_group_ownership_newgroup variable if represented by gid
     ansible.builtin.set_fact:
       file_audit_tools_group_ownership_newgroup: '0'
