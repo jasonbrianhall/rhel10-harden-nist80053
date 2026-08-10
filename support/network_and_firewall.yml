@@ -14,6 +14,9 @@
 #   ansible-playbook network_and_firewall.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
   vars:
     sysctl_net_ipv6_conf_all_accept_ra_value: '0'
     sysctl_net_ipv6_conf_all_accept_redirects_value: '0'
@@ -35,6 +38,11 @@
     sysctl_net_ipv4_tcp_syncookies_value: '1'
     var_networkmanager_dns_mode: default
   tasks:
+
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+  
   # DANGEROUS: this task can lock out access, remove software,
   # disable a service, or otherwise change system behavior in a
   # breaking way. Review before running.
