@@ -265,7 +265,6 @@
       replace: \g<1>\g<2>+acl
     when:
     - '"kernel-core" in ansible_facts.packages'
-    - find_rules_groups_results is not skipped and "'aide' in ansible_facts.packages"
     with_items: '{{ find_rules_groups_results.stdout_lines | map(''trim'') | list }}'
     tags:
     - CCE-89640-7
@@ -310,7 +309,6 @@
       replace: \g<1>\g<2>+xattrs
     when:
     - '"kernel-core" in ansible_facts.packages'
-    - find_rules_groups_results is not skipped and "'aide' in ansible_facts.packages"
     with_items: '{{ find_rules_groups_results.stdout_lines | map(''trim'') | list }}'
     tags:
     - CCE-89625-8
