@@ -14,9 +14,19 @@
 #   ansible-playbook file_integrity.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
+
   vars:
     var_aide_scan_notification_email: root@localhost
+
   tasks:
+
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+
   - name: Build and Test AIDE Database - Check Whether the Stock AIDE Database Exists
     ansible.builtin.stat:
       path: /var/lib/aide/aide.db.new.gz
