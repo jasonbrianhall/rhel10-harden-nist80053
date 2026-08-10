@@ -46,6 +46,9 @@
     var_accounts_user_umask: '077'
     var_postfix_root_mail_alias: system.administrator@mail.mil
     current_user: "{{ ansible_user_id }}"
+    rescue_service_remediation_target_file:
+      - /usr/lib/systemd/system/rescue.service
+      - /usr/lib/systemd/system/emergency.service
 
   tasks:
 
