@@ -55,7 +55,7 @@
     dnf:
       name: sudo
       state: present
-      use_backend: dnf5
+      use_backend: dnf
     when: '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-87100-4
