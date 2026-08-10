@@ -14,6 +14,9 @@
 #   ansible-playbook kernel_and_bootloader.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
   vars:
     sysctl_net_ipv6_conf_all_accept_ra_value: '0'
     sysctl_net_ipv6_conf_all_accept_redirects_value: '0'
@@ -36,6 +39,11 @@
     sysctl_kernel_kptr_restrict_value: '1'
     var_audit_backlog_limit: '8192'
   tasks:
+
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+  
   - name: Verify that Interactive Boot is Disabled - Verify GRUB_DISABLE_RECOVERY=true
     ansible.builtin.lineinfile:
       path: /etc/default/grub
