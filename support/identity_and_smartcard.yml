@@ -14,10 +14,19 @@
 #   ansible-playbook identity_and_smartcard.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
+
   vars:
     var_smartcard_drivers: cac
     var_sssd_certificate_verification_digest_function: sha512
   tasks:
+
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+
   - name: Configure smartcard driver block
     block:
     - name: Check if card_drivers is defined
