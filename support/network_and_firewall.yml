@@ -37,17 +37,32 @@
     sysctl_net_ipv4_tcp_invalid_ratelimit_value: '500'
     sysctl_net_ipv4_tcp_syncookies_value: '1'
     var_networkmanager_dns_mode: default
-    sysctl_paths:
-      - /etc/sysctl.conf
-      - /etc/sysctl.d
-      - /run/sysctl.d
-      - /usr/lib/sysctl.d
 
   tasks:
 
   - name: Gather package facts
     ansible.builtin.package_facts:
       manager: auto
+
+  - name: Configure Accepting Router Advertisements on All IPv6 Interfaces - Set fact for sysctl paths
+    ansible.builtin.set_fact:
+      sysctl_paths:
+      - /etc/sysctl.d/
+      - /run/sysctl.d/
+      - /usr/local/lib/sysctl.d/
+    when: '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88665-5
+    - NIST-800-171-3.1.20
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - disable_strategy
+    - low_complexity
+    - medium_disruption
+    - medium_severity
+    - reboot_required
+    - sysctl_net_ipv6_conf_all_accept_ra
   
   # DANGEROUS: this task can lock out access, remove software,
   # disable a service, or otherwise change system behavior in a
