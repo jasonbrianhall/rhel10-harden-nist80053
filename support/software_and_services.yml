@@ -14,6 +14,10 @@
 #   ansible-playbook software_and_services.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
+
   vars:
     var_logind_session_timeout: '300'
     var_time_service_set_maxpoll: '16'
@@ -1080,11 +1084,6 @@
 
   - name: 'Ensure Red Hat GPG Key Installed: Import RedHat GPG key'
     ansible.builtin.command: rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
-    when:
-    - gpg_key_directory_permission.stat.mode <= '0755'
-    - (gpg_installed_fingerprints | difference(gpg_valid_fingerprints)) | length == 0
-    - gpg_installed_fingerprints | length > 0
-    - ansible_distribution == "RedHat"
     tags:
     - CCE-88256-3
     - CJIS-5.10.4.1
