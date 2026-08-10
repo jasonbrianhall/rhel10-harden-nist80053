@@ -1643,6 +1643,7 @@
         enabled: true
         state: started
         masked: false
+      ignore_errors: true
       when:
       - '"sssd-common" in ansible_facts.packages'
     tags:
