@@ -4330,7 +4330,6 @@
   - name: Rebuild GRUB config
     ansible.builtin.command: grub2-mkconfig -o {{ grub_cfg_path }}
     when:
-    - grub_default_updated is changed
     - ansible_architecture != "s390x"
     tags:
     - fips_grub_enabled
