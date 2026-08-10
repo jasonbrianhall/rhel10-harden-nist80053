@@ -14,6 +14,9 @@
 #   ansible-playbook audit_and_logging.yml --tags dangerous
 ###############################################################################
 - hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
   vars:
     rsyslog_remote_loghost_address: logcollector
     var_audit_failure_mode: '2'
@@ -25,6 +28,11 @@
     var_auditd_freq: '100'
     var_auditd_name_format: hostname|fqd|numeric
   tasks:
+    
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+      manager: auto
+  
   - name: Configure AIDE to Verify the Audit Tools - Gather List of Packages
     tags:
     - CCE-86441-3
@@ -41,12 +49,11 @@
       manager: auto
     when: '"kernel-core" in ansible_facts.packages'
 
-  - name: Configure AIDE to Verify the Audit Tools - Ensure AIDE is Installed
-    ansible.builtin.package:
-      name: '{{ item }}'
+  - name: Ensure AIDE to Verify the Audit Tools - Installs AIDE
+    dnf:
+      name: aide
       state: present
-    with_items:
-    - aide
+      use_backend: dnf
     when: '"kernel-core" in ansible_facts.packages'
     tags:
     - CCE-86441-3
