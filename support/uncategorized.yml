@@ -33,22 +33,6 @@
     - no_reboot_needed
     - restrict_strategy
 
-  - name: Gather list of packages
-    ansible.builtin.package_facts:
-      manager: auto
-    when: '"kernel-core" in ansible_facts.packages'
-    tags:
-    - CCE-89625-8
-    - NIST-800-53-CM-6(a)
-    - NIST-800-53-SI-7
-    - NIST-800-53-SI-7(1)
-    - aide_verify_ext_attributes
-    - low_complexity
-    - low_disruption
-    - low_severity
-    - no_reboot_needed
-    - restrict_strategy
-
   - name: Set the file_audit_tools_group_ownership_newgroup variable if represented by gid
     ansible.builtin.set_fact:
       file_audit_tools_group_ownership_newgroup: '0'
@@ -82,7 +66,7 @@
     ansible.builtin.file:
       path: /sbin/auditctl
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -115,7 +99,7 @@
     ansible.builtin.file:
       path: /sbin/aureport
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -148,7 +132,7 @@
     ansible.builtin.file:
       path: /sbin/ausearch
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -181,7 +165,7 @@
     ansible.builtin.file:
       path: /sbin/autrace
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -214,7 +198,7 @@
     ansible.builtin.file:
       path: /sbin/augenrules
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -261,7 +245,7 @@
     ansible.builtin.file:
       path: /sbin/auditctl
       follow: false
-      owner: '{{ file_audit_tools_ownership_newown }}'
+      owner: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
