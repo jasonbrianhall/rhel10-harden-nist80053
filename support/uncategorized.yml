@@ -51,6 +51,32 @@
     - reboot_required
     - sysctl_net_ipv6_conf_all_accept_ra
 
+  - name: Find root:root-owned keys
+    ansible.builtin.command: find -H /etc/ssh/ -maxdepth 1 -user root -regex ".*_key$" -type f -group root -perm /u+xs,g+xwrs,o+xwrt
+    register: root_owned_keys
+    changed_when: false
+    failed_when: false
+    check_mode: false
+    when:
+    - ansible_facts.packages is defined
+    - '"kernel-core" in ansible_facts.packages'
+    tags:
+    - CCE-88018-7
+    - NIST-800-171-3.1.13
+    - NIST-800-171-3.13.10
+    - NIST-800-53-AC-17(a)
+    - NIST-800-53-AC-6(1)
+    - NIST-800-53-CM-6(a)
+    - PCI-DSS-Req-2.2.4
+    - PCI-DSSv4-2.2
+    - PCI-DSSv4-2.2.6
+    - configure_strategy
+    - file_permissions_sshd_private_key
+    - low_complexity
+    - low_disruption
+    - medium_severity
+    - no_reboot_needed
+
   - name: Ensure All World-Writable Directories Are Owned by root User - Define Excluded (Non-Local) File Systems and Paths
     ansible.builtin.set_fact:
       excluded_fstypes:
@@ -4271,3 +4297,41 @@
     - low_disruption
     - medium_severity
     - no_reboot_needed
+    
+  - name: Check if system is UEFI
+    ansible.builtin.stat:
+      path: /sys/firmware/efi
+    register: efi_check
+    tags:
+    - fips_grub_enabled
+
+  - name: Find UEFI grub.cfg path
+    ansible.builtin.find:
+      paths: /boot/efi/EFI
+      patterns: grub.cfg
+      recurse: true
+    register: efi_grub_cfg
+    when: efi_check.stat.exists
+    tags:
+    - fips_grub_enabled
+
+  - name: Set grub.cfg path fact
+    ansible.builtin.set_fact:
+      grub_cfg_path: >-
+        {{ efi_grub_cfg.files[0].path
+        if (efi_check.stat.exists and efi_grub_cfg.files | default([]) | length > 0)
+        else '/boot/grub2/grub.cfg' }}
+    tags:
+    - fips_grub_enabled
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Rebuild GRUB config
+    ansible.builtin.command: grub2-mkconfig -o {{ grub_cfg_path }}
+    when:
+    - grub_default_updated is changed
+    - ansible_architecture != "s390x"
+    tags:
+    - fips_grub_enabled
+    - dangerous    
