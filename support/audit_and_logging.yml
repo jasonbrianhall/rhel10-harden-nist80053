@@ -163,7 +163,7 @@
     ansible.builtin.file:
       path: /sbin/auditd
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -196,7 +196,7 @@
     ansible.builtin.file:
       path: /sbin/rsyslogd
       follow: false
-      group: '{{ file_audit_tools_group_ownership_newgroup }}'
+      group: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -229,7 +229,7 @@
     ansible.builtin.file:
       path: /sbin/auditd
       follow: false
-      owner: '{{ file_audit_tools_ownership_newown }}'
+      owner: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -262,7 +262,7 @@
     ansible.builtin.file:
       path: /sbin/rsyslogd
       follow: false
-      owner: '{{ file_audit_tools_ownership_newown }}'
+      owner: root
     when:
     - '"kernel-core" in ansible_facts.packages'
     - file_exists.stat is defined and file_exists.stat.exists
@@ -3868,7 +3868,7 @@
     ansible.builtin.file:
       path: '{{ item }}'
       follow: false
-      group: '{{ file_groupownership_audit_configuration_newgroup }}'
+      group: root
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
@@ -3906,7 +3906,7 @@
     ansible.builtin.file:
       path: '{{ item }}'
       follow: false
-      group: '{{ file_groupownership_audit_configuration_newgroup }}'
+      group: root
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
@@ -3959,7 +3959,7 @@
     ansible.builtin.file:
       path: '{{ item }}'
       follow: false
-      owner: '{{ file_ownership_audit_configuration_newown }}'
+      owner: root
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
@@ -3997,7 +3997,7 @@
     ansible.builtin.file:
       path: '{{ item }}'
       follow: false
-      owner: '{{ file_ownership_audit_configuration_newown }}'
+      owner: root
       state: file
     with_items:
     - '{{ files_found.stdout_lines }}'
