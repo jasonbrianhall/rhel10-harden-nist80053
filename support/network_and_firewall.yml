@@ -1294,23 +1294,26 @@
     - reboot_required
     - sysctl_net_ipv4_tcp_invalid_ratelimit
 
-  - name: Configure Kernel to Rate Limit Sending of Duplicate TCP Acknowledgments - Find all files that set net.ipv4.tcp_invalid_ratelimit to correct value
+  - name: Enable Kernel Parameter to Use Reverse Path Filtering on all IPv4 Interfaces by Default
     ansible.builtin.shell:
-      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*net.ipv4.tcp_invalid_ratelimit\s*=\s*{{ sysctl_net_ipv4_tcp_invalid_ratelimit_value }}$'
-    register: find_correct_value
+      cmd: find -L {{ sysctl_paths | join(" ") }} -type f -name '*.conf' | xargs grep -HP '^\s*net.ipv4.conf.default.rp_filter\s*=\s*.*$'
+    register: find_all_values
     check_mode: false
     changed_when: false
     failed_when: false
     when: '"kernel-core" in ansible_facts.packages'
     tags:
-    - CCE-86242-5
-    - NIST-800-53-SC-5
-    - disable_strategy
+    - CCE-87424-8
+    - NIST-800-53-CM-6(a)
+    - NIST-800-53-CM-7(a)
+    - NIST-800-53-CM-7(b)
+    - NIST-800-53-SC-7(a)
+    - enable_strategy
     - low_complexity
-    - medium_disruption
+    - low_disruption
     - medium_severity
-    - reboot_required
-    - sysctl_net_ipv4_tcp_invalid_ratelimit
+    - no_reboot_needed
+    - sysctl_net_ipv4_conf_default_rp_filter
 
   - name: Configure Kernel to Rate Limit Sending of Duplicate TCP Acknowledgments - Comment out any occurrences of net.ipv4.tcp_invalid_ratelimit from config files
     ansible.builtin.replace:
@@ -1857,4 +1860,33 @@
     - low_complexity
     - medium_severity
     - no_reboot_needed
+    - dangerous
+    
+  - name: Ensure ssh service is permitted before changing default zone
+    ansible.builtin.command: firewall-cmd --zone=public --add-service=ssh --permanent
+    changed_when: true
+    tags:
+    - set_firewalld_default_zone
+
+  - name: Ensure default interface is assigned to public zone
+    ansible.builtin.command: firewall-cmd --zone=public --change-interface={{ ansible_default_ipv4.interface }} --permanent
+    changed_when: true
+    tags:
+    - set_firewalld_default_zone
+
+  - name: Reload firewalld to apply zone/service changes
+    ansible.builtin.command: firewall-cmd --reload
+    changed_when: true
+    tags:
+    - set_firewalld_default_zone
+
+  # DANGEROUS: this task can lock out access, remove software,
+  # disable a service, or otherwise change system behavior in a
+  # breaking way. Review before running.
+  - name: Set Default firewalld Zone for Incoming Packets
+    ansible.builtin.command: firewall-cmd --set-default-zone=public
+    changed_when: true
+    tags:
+    - CCE-87823-1
+    - set_firewalld_default_zone
     - dangerous
