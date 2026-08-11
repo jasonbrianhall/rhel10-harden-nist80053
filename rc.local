@@ -1,0 +1,11 @@
+#!/bin/bash
+# /etc/rc.d/rc.local
+
+IFACE=$(nmcli -t -f DEVICE,TYPE device status | awk -F: '$2=="ethernet"{print $1; exit}')
+
+if [ -n "$IFACE" ] && ! nmcli -t -f DEVICE connection show --active | grep -q "^$IFACE$"; then
+    nmcli connection add type ethernet ifname "$IFACE" con-name "$IFACE" ipv4.method auto ipv6.method auto
+    nmcli connection up "$IFACE"
+fi
+
+exit 0
