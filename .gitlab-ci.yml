@@ -1,0 +1,31 @@
+---
+# Runs against the self-hosted GitLab Runner registered with
+# register_gitlab_runner.sh (--tls-skip-verify). Also disables TLS
+# verification for this pipeline's own git operations, in case the
+# runner-wide setting isn't in place yet.
+variables:
+  GIT_SSL_NO_VERIFY: "true"
+
+stages:
+  - boot
+  - hardening
+
+boot_vm:
+  stage: boot
+  tags:
+    - rhel-hardening
+  script:
+    - ./run_aws.sh boot
+  artifacts:
+    paths:
+      - .vm_ip
+    expire_in: 1 day
+
+run_hardening:
+  stage: hardening
+  tags:
+    - rhel-hardening
+  needs:
+    - boot_vm
+  script:
+    - ./run_aws.sh hardening

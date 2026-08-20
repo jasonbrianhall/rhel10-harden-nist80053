@@ -1,0 +1,198 @@
+---
+# NOTE: Targets AWS GovCloud (US). GovCloud is a separate partition with its
+# own IAM/credentials (not shared with a commercial AWS account) - make sure
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (or the instance profile) belong
+# to the GovCloud account, and aws_region is a us-gov-* region.
+- name: Find RHEL10 AMI, boot EC2 instance, and get IP address
+  hosts: localhost
+  gather_facts: yes
+  connection: local
+  vars:
+    # Configuration - customize these
+    vm_name: "rhel-hardened-{{ ansible_date_time.iso8601_basic_short }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-gov-west-1', true) }}"
+    instance_type: "t3a.medium"
+    root_volume_size: 20
+
+    # AMI lookup - matched against RHEL10 x86_64 images by description
+    # Note: Red Hat publishes under a different account ID in GovCloud than
+    # in standard AWS partitions (309956199498).
+    ami_owner: "219670896067"   # Red Hat's AWS GovCloud account
+    ami_description_filter: "Provided by Red Hat, Inc. | Red Hat Enterprise Linux 10*"
+
+    # Networking - leave blank to auto-detect from the instance this play runs on
+    subnet_id: ""
+    security_group_ids: []
+    assign_public_ip: false
+
+    # SSH access to the new instance
+    key_name: "{{ lookup('env', 'AWS_KEY_NAME') }}"
+    ec2_user: "ec2-user"
+    ssh_private_key_file: "/root/.ssh/id_rsa"
+
+    boot_timeout: 300  # seconds to wait for SSH to come up
+
+    # Hardening playbooks - set to true to run, false to skip
+    run_verification: true
+    hardening_dir: support
+
+    # Subscription Manager credentials
+    rhel_username: "{{ lookup('env', 'RHEL_USER') }}"
+    rhel_password: "{{ lookup('env', 'RHEL_PASS') }}"
+
+  tasks:
+    - name: Check if .vm_ip file exists
+      stat:
+        path: ".vm_ip"
+      register: vm_ip_file
+      changed_when: false
+
+    - name: Skip VM creation if .vm_ip exists
+      meta: end_host
+      when: vm_ip_file.stat.exists
+
+    - name: Gather EC2 metadata facts for this host
+      amazon.aws.ec2_metadata_facts:
+
+    - name: Look up this instance's networking (for same-subnet defaults)
+      amazon.aws.ec2_instance_info:
+        region: "{{ aws_region }}"
+        instance_ids:
+          - "{{ ansible_ec2_instance_id }}"
+      register: current_instance
+      when: subnet_id == "" or security_group_ids | length == 0
+
+    - name: Resolve subnet and security groups to launch into
+      set_fact:
+        resolved_subnet_id: "{{ subnet_id if subnet_id != '' else current_instance.instances[0].subnet_id }}"
+        resolved_security_group_ids: "{{ security_group_ids if security_group_ids | length > 0 else (current_instance.instances[0].security_groups | map(attribute='group_id') | list) }}"
+
+    - name: Find latest RHEL10 x86_64 AMI
+      amazon.aws.ec2_ami_info:
+        region: "{{ aws_region }}"
+        owners:
+          - "{{ ami_owner }}"
+        filters:
+          description: "{{ ami_description_filter }}"
+          architecture: "x86_64"
+          root-device-type: "ebs"
+          virtualization-type: "hvm"
+          state: "available"
+      register: rhel_amis
+      failed_when: rhel_amis.images | length == 0
+
+    - name: Select most recent AMI
+      set_fact:
+        rhel_ami_id: "{{ (rhel_amis.images | sort(attribute='creation_date') | last).image_id }}"
+
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        name: "{{ vm_name }}"
+        region: "{{ aws_region }}"
+        image_id: "{{ rhel_ami_id }}"
+        instance_type: "{{ instance_type }}"
+        subnet_id: "{{ resolved_subnet_id }}"
+        security_group: "{{ resolved_security_group_ids }}"
+        key_name: "{{ key_name }}"
+        network:
+          assign_public_ip: "{{ assign_public_ip }}"
+        volumes:
+          - device_name: /dev/sda1
+            ebs:
+              volume_size: "{{ root_volume_size }}"
+              delete_on_termination: true
+        tags:
+          Name: "{{ vm_name }}"
+        wait: yes
+        wait_timeout: "{{ boot_timeout }}"
+        state: running
+      register: ec2_launch
+
+    - name: Determine VM IP address
+      set_fact:
+        rhel_vm_ip: "{{ ec2_launch.instances[0].public_ip_address | default('', true) or ec2_launch.instances[0].private_ip_address }}"
+
+    - name: Display VM information
+      debug:
+        msg: |
+          VM created successfully!
+          VM Name: {{ vm_name }}
+          Instance ID: {{ ec2_launch.instances[0].instance_id }}
+          AMI: {{ rhel_ami_id }}
+          IP Address: {{ rhel_vm_ip }}
+          Instance Type: {{ instance_type }}
+          Subnet: {{ resolved_subnet_id }}
+
+    - name: Verify SSH connectivity to VM
+      wait_for:
+        host: "{{ rhel_vm_ip }}"
+        port: 22
+        delay: 5
+        timeout: "{{ boot_timeout }}"
+      register: ssh_check
+
+    - name: Add VM to in-memory inventory
+      add_host:
+        name: "{{ vm_name }}"
+        ansible_host: "{{ rhel_vm_ip }}"
+        ansible_user: "{{ ec2_user }}"
+        ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
+        groups: new_vms
+
+    - name: Summary
+      debug:
+        msg: |
+          Ready for hardening!
+          Connect to VM: ssh {{ ec2_user }}@{{ rhel_vm_ip }}
+          Run hardening playbook with:
+          ansible-playbook -i {{ rhel_vm_ip }}, hardening.yml
+
+    - name: Save VM IP to file
+      copy:
+        content: "{{ rhel_vm_ip }}"
+        dest: ".vm_ip"
+      delegate_to: localhost
+
+- name: Run verification on new VM
+  hosts: new_vms
+  gather_facts: yes
+  remote_user: "{{ hostvars['localhost']['ec2_user'] }}"
+  become: yes
+  vars:
+    verification_playbook: verify.yml
+    run_verification: true
+  tasks:
+    - name: Configure passwordless sudo
+      lineinfile:
+        path: "/etc/sudoers.d/{{ hostvars['localhost']['ec2_user'] }}"
+        line: "{{ hostvars['localhost']['ec2_user'] }} ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Register with subscription-manager
+      command: |
+        subscription-manager register --username {{ hostvars['localhost']['rhel_username'] }} --password {{ hostvars['localhost']['rhel_password'] }} --force
+      environment:
+        LANG: en_US.UTF-8
+
+    - name: Verify VM is responsive
+      debug:
+        msg: "VM {{ inventory_hostname }} is online and accessible"
+      when: run_verification
+
+    - name: Run verification playbook
+      include_tasks: "{{ verification_playbook }}"
+      ignore_errors: yes
+      when: run_verification
+
+- name: Display hardening instructions
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Output VM details for hardening
+      debug:
+        msg: |
+          VM is ready for hardening!
+          Run hardening playbooks with: ./run.sh hardening
+          Or run individual playbooks from the support/ directory
