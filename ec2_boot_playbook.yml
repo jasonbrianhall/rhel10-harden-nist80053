@@ -18,10 +18,9 @@
     # Note: Red Hat publishes under a different account ID in GovCloud than
     # in standard AWS partitions (309956199498).
     ami_owner: "219670896067"   # Red Hat's AWS GovCloud account
-    # AWS's real Description field for these is just "Provided by Red Hat, Inc."
-    # (no version info) - the version/edition lives in the Name field instead,
-    # e.g. "RHEL-10.0.0_HVM-20250514-x86_64-...-Hourly2-GP3".
-    ami_description_filter: "Provided by Red Hat, Inc."
+    # Confirmed via `aws ec2 describe-images --image-ids <id>`: GovCloud RHEL
+    # images carry an ITAR-disclaimer Description, not a fixed "Provided by
+    # Red Hat, Inc." string, so match on Name instead.
     ami_name_filter: "RHEL-10*_HVM-*-x86_64-*"
 
     # Networking - leave blank to auto-detect from the instance this play runs on
@@ -30,8 +29,8 @@
 
     # Security group - looked up by name in the target VPC; created
     # automatically (SSH-only from allowed_ssh_cidr) if it doesn't exist yet
-    security_group_name: "Allow SSH from 10.0.0.0/24 Subnet"
-    allowed_ssh_cidr: "10.0.0.0/24"
+    security_group_name: "Allow SSH from 10.0.0.0/8 Subnet"
+    allowed_ssh_cidr: "10.0.0.0/8"
 
     # SSH access to the new instance
     key_name: "{{ lookup('env', 'AWS_KEY_NAME') }}"
@@ -108,7 +107,6 @@
         owners:
           - "{{ ami_owner }}"
         filters:
-          description: "{{ ami_description_filter }}"
           name: "{{ ami_name_filter }}"
           architecture: "x86_64"
           root-device-type: "ebs"
