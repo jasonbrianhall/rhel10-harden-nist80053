@@ -33,9 +33,15 @@
     allowed_ssh_cidr: "10.0.0.0/8"
 
     # SSH access to the new instance
-    key_name: "{{ lookup('env', 'AWS_KEY_NAME') }}"
+    # AWS EC2 only accepts RSA or ED25519 key pairs (ECDSA is rejected by
+    # CreateKeyPair/ImportKeyPair). RSA (>=3072-bit) is FIPS 140 approved for
+    # SSH under RHEL's FIPS crypto policy; ED25519 is not - so RSA is used.
+    ssh_key_name: "Hardening_SSH_Key"
+    ssh_key_bits: 4096
+    ssh_key_dir: "{{ ansible_env.HOME }}/.ssh"
+    ssh_private_key_file: "{{ ssh_key_dir }}/hardening_ssh_key"
+    ssh_public_key_file: "{{ ssh_private_key_file }}.pub"
     ec2_user: "ec2-user"
-    ssh_private_key_file: "/root/.ssh/id_rsa"
 
     boot_timeout: 300  # seconds to wait for SSH to come up
 
@@ -109,6 +115,38 @@
         resolved_security_group_ids:
           - "{{ ssh_sg.group_id }}"
 
+    - name: Ensure ~/.ssh directory exists
+      file:
+        path: "{{ ssh_key_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Check for existing local "{{ ssh_key_name }}" key pair
+      stat:
+        path: "{{ ssh_private_key_file }}"
+      register: local_key_stat
+
+    - name: Generate FIPS-compliant RSA {{ ssh_key_bits }}-bit key pair
+      command: >
+        ssh-keygen -t rsa -b {{ ssh_key_bits }}
+        -f {{ ssh_private_key_file }}
+        -N ""
+        -C "{{ ssh_key_name }}"
+      when: not local_key_stat.stat.exists
+
+    - name: Lock down private key permissions
+      file:
+        path: "{{ ssh_private_key_file }}"
+        mode: '0600'
+
+    - name: Import/verify "{{ ssh_key_name }}" key pair in AWS
+      amazon.aws.ec2_key:
+        name: "{{ ssh_key_name }}"
+        region: "{{ aws_region }}"
+        key_material: "{{ lookup('file', ssh_public_key_file) }}"
+        state: present
+      register: aws_key
+
     - name: Find latest RHEL10 x86_64 AMI
       amazon.aws.ec2_ami_info:
         region: "{{ aws_region }}"
@@ -135,7 +173,7 @@
         instance_type: "{{ instance_type }}"
         subnet_id: "{{ resolved_subnet_id }}"
         security_groups: "{{ resolved_security_group_ids }}"
-        key_name: "{{ key_name }}"
+        key_name: "{{ ssh_key_name }}"
         network:
           assign_public_ip: "{{ assign_public_ip }}"
         volumes:
@@ -193,6 +231,21 @@
       copy:
         content: "{{ rhel_vm_ip }}"
         dest: ".vm_ip"
+      delegate_to: localhost
+
+    - name: Add "{{ vm_name }}" entry to ~/.ssh/config
+      blockinfile:
+        path: "{{ ansible_env.HOME }}/.ssh/config"
+        create: yes
+        mode: '0600'
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ vm_name }}"
+        block: |
+          Host {{ vm_name }}
+              HostName {{ rhel_vm_ip }}
+              User {{ ec2_user }}
+              IdentityFile {{ ssh_private_key_file }}
+              IdentitiesOnly yes
+              StrictHostKeyChecking accept-new
       delegate_to: localhost
 
 - name: Run verification on new VM
