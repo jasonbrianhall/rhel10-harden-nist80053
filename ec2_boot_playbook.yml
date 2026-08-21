@@ -94,6 +94,8 @@
             rule_desc: "SSH from {{ allowed_ssh_cidr }}"
         purge_rules: true
         purge_rules_egress: false
+        tags:
+          Name: "{{ security_group_name }}"
       register: ssh_sg
 
     - name: Set resolved security group id
@@ -126,7 +128,7 @@
         image_id: "{{ rhel_ami_id }}"
         instance_type: "{{ instance_type }}"
         subnet_id: "{{ resolved_subnet_id }}"
-        security_group: "{{ resolved_security_group_ids }}"
+        security_groups: "{{ resolved_security_group_ids }}"
         key_name: "{{ key_name }}"
         network:
           assign_public_ip: "{{ assign_public_ip }}"
