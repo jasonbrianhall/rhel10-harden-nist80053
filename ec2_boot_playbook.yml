@@ -223,7 +223,9 @@
               User {{ ec2_user }}
               IdentityFile {{ ssh_private_key_file }}
               IdentitiesOnly yes
-              StrictHostKeyChecking accept-new
+              StrictHostKeyChecking no
+              UserKnownHostsFile /dev/null
+              LogLevel ERROR
       delegate_to: localhost
 
     - name: Add VM to in-memory inventory
