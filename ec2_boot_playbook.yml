@@ -94,9 +94,15 @@
             rule_desc: "SSH from {{ allowed_ssh_cidr }}"
         purge_rules: true
         purge_rules_egress: false
+      register: ssh_sg
+
+    - name: Explicitly set Name tag on the security group
+      amazon.aws.ec2_tag:
+        region: "{{ aws_region }}"
+        resource: "{{ ssh_sg.group_id }}"
         tags:
           Name: "{{ security_group_name }}"
-      register: ssh_sg
+        state: present
 
     - name: Set resolved security group id
       set_fact:
