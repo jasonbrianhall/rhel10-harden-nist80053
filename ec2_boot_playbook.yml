@@ -211,28 +211,6 @@
         timeout: "{{ boot_timeout }}"
       register: ssh_check
 
-    - name: Add VM to in-memory inventory
-      add_host:
-        name: "{{ vm_name }}"
-        ansible_host: "{{ rhel_vm_ip }}"
-        ansible_user: "{{ ec2_user }}"
-        ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
-        groups: new_vms
-
-    - name: Summary
-      debug:
-        msg: |
-          Ready for hardening!
-          Connect to VM: ssh {{ ec2_user }}@{{ rhel_vm_ip }}
-          Run hardening playbook with:
-          ansible-playbook -i {{ rhel_vm_ip }}, hardening.yml
-
-    - name: Save VM IP to file
-      copy:
-        content: "{{ rhel_vm_ip }}"
-        dest: ".vm_ip"
-      delegate_to: localhost
-
     - name: Add "{{ vm_name }}" entry to ~/.ssh/config
       blockinfile:
         path: "{{ ansible_env.HOME }}/.ssh/config"
@@ -248,26 +226,52 @@
               StrictHostKeyChecking accept-new
       delegate_to: localhost
 
+    - name: Add VM to in-memory inventory
+      add_host:
+        name: "{{ vm_name }}"
+        ansible_host: "{{ vm_name }}"
+        groups: new_vms
+        rhel_username: "{{ rhel_username }}"
+        rhel_password: "{{ rhel_password }}"
+
+    - name: Summary
+      debug:
+        msg: |
+          Ready for hardening!
+          Connect to VM: ssh {{ vm_name }}
+          Run hardening playbook with:
+          ansible-playbook -i {{ rhel_vm_ip }}, hardening.yml
+
+    - name: Save VM IP to file
+      copy:
+        content: "{{ rhel_vm_ip }}"
+        dest: ".vm_ip"
+      delegate_to: localhost
+
 - name: Run verification on new VM
   hosts: new_vms
   gather_facts: yes
-  remote_user: "{{ hostvars['localhost']['ec2_user'] }}"
   become: yes
   vars:
+    # Connection (user, IdentityFile, StrictHostKeyChecking) comes entirely
+    # from the ~/.ssh/config "Host {{ vm_name }}" block written in the prior
+    # play - ec2_user here is only needed for the sudoers path/line below and
+    # must match ec2_user in the first play's vars.
+    ec2_user: "ec2-user"
     verification_playbook: verify.yml
     run_verification: true
   tasks:
     - name: Configure passwordless sudo
       lineinfile:
-        path: "/etc/sudoers.d/{{ hostvars['localhost']['ec2_user'] }}"
-        line: "{{ hostvars['localhost']['ec2_user'] }} ALL=(ALL) NOPASSWD:ALL"
+        path: "/etc/sudoers.d/{{ ec2_user }}"
+        line: "{{ ec2_user }} ALL=(ALL) NOPASSWD:ALL"
         create: yes
         mode: '0440'
         validate: '/usr/sbin/visudo -cf %s'
 
     - name: Register with subscription-manager
       command: |
-        subscription-manager register --username {{ hostvars['localhost']['rhel_username'] }} --password {{ hostvars['localhost']['rhel_password'] }} --force
+        subscription-manager register --username {{ rhel_username }} --password {{ rhel_password }} --force
       environment:
         LANG: en_US.UTF-8
 
