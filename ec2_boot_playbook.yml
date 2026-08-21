@@ -18,12 +18,20 @@
     # Note: Red Hat publishes under a different account ID in GovCloud than
     # in standard AWS partitions (309956199498).
     ami_owner: "219670896067"   # Red Hat's AWS GovCloud account
-    ami_description_filter: "Provided by Red Hat, Inc. | Red Hat Enterprise Linux 10*"
+    # AWS's real Description field for these is just "Provided by Red Hat, Inc."
+    # (no version info) - the version/edition lives in the Name field instead,
+    # e.g. "RHEL-10.0.0_HVM-20250514-x86_64-...-Hourly2-GP3".
+    ami_description_filter: "Provided by Red Hat, Inc."
+    ami_name_filter: "RHEL-10*_HVM-*-x86_64-*"
 
     # Networking - leave blank to auto-detect from the instance this play runs on
     subnet_id: ""
-    security_group_ids: []
     assign_public_ip: false
+
+    # Security group - looked up by name in the target VPC; created
+    # automatically (SSH-only from allowed_ssh_cidr) if it doesn't exist yet
+    security_group_name: "Allow SSH from 10.0.0.0/24 Subnet"
+    allowed_ssh_cidr: "10.0.0.0/24"
 
     # SSH access to the new instance
     key_name: "{{ lookup('env', 'AWS_KEY_NAME') }}"
@@ -54,18 +62,45 @@
     - name: Gather EC2 metadata facts for this host
       amazon.aws.ec2_metadata_facts:
 
-    - name: Look up this instance's networking (for same-subnet defaults)
+    - name: Look up this instance's networking (for same-subnet default)
       amazon.aws.ec2_instance_info:
         region: "{{ aws_region }}"
         instance_ids:
           - "{{ ansible_ec2_instance_id }}"
       register: current_instance
-      when: subnet_id == "" or security_group_ids | length == 0
+      when: subnet_id == ""
 
-    - name: Resolve subnet and security groups to launch into
+    - name: Resolve subnet to launch into
       set_fact:
         resolved_subnet_id: "{{ subnet_id if subnet_id != '' else current_instance.instances[0].subnet_id }}"
-        resolved_security_group_ids: "{{ security_group_ids if security_group_ids | length > 0 else (current_instance.instances[0].security_groups | map(attribute='group_id') | list) }}"
+
+    - name: Get VPC for resolved subnet
+      amazon.aws.ec2_vpc_subnet_info:
+        region: "{{ aws_region }}"
+        subnet_ids:
+          - "{{ resolved_subnet_id }}"
+      register: resolved_subnet_info
+
+    - name: Find or create "{{ security_group_name }}" security group
+      amazon.aws.ec2_security_group:
+        name: "{{ security_group_name }}"
+        description: "Allow SSH only from {{ allowed_ssh_cidr }}"
+        region: "{{ aws_region }}"
+        vpc_id: "{{ resolved_subnet_info.subnets[0].vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: "{{ allowed_ssh_cidr }}"
+            rule_desc: "SSH from {{ allowed_ssh_cidr }}"
+        purge_rules: true
+        purge_rules_egress: false
+      register: ssh_sg
+
+    - name: Set resolved security group id
+      set_fact:
+        resolved_security_group_ids:
+          - "{{ ssh_sg.group_id }}"
 
     - name: Find latest RHEL10 x86_64 AMI
       amazon.aws.ec2_ami_info:
@@ -74,6 +109,7 @@
           - "{{ ami_owner }}"
         filters:
           description: "{{ ami_description_filter }}"
+          name: "{{ ami_name_filter }}"
           architecture: "x86_64"
           root-device-type: "ebs"
           virtualization-type: "hvm"
