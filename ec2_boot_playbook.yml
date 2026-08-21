@@ -10,7 +10,7 @@
   vars:
     # Configuration - customize these
     vm_name: "rhel-hardened-{{ ansible_date_time.iso8601_basic_short }}"
-    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-gov-west-1', true) }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-gov-east-1', true) }}"
     instance_type: "t3a.medium"
     root_volume_size: 20
 
