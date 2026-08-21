@@ -211,15 +211,18 @@
         timeout: "{{ boot_timeout }}"
       register: ssh_check
 
-    - name: Add "{{ vm_name }}" entry to ~/.ssh/config
+    - name: Compute /24 subnet for "{{ rhel_vm_ip }}"
+      set_fact:
+        vm_ip_subnet: "{{ rhel_vm_ip.split('.')[0:3] | join('.') }}.*"
+
+    - name: Add generic SSH config rule for "{{ vm_ip_subnet }}"
       blockinfile:
         path: "{{ ansible_env.HOME }}/.ssh/config"
         create: yes
         mode: '0600'
-        marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ vm_name }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ vm_ip_subnet }}"
         block: |
-          Host {{ vm_name }}
-              HostName {{ rhel_vm_ip }}
+          Host {{ vm_ip_subnet }}
               User {{ ec2_user }}
               IdentityFile {{ ssh_private_key_file }}
               IdentitiesOnly yes
@@ -231,7 +234,7 @@
     - name: Add VM to in-memory inventory
       add_host:
         name: "{{ vm_name }}"
-        ansible_host: "{{ vm_name }}"
+        ansible_host: "{{ rhel_vm_ip }}"
         groups: new_vms
         rhel_username: "{{ rhel_username }}"
         rhel_password: "{{ rhel_password }}"
@@ -240,7 +243,7 @@
       debug:
         msg: |
           Ready for hardening!
-          Connect to VM: ssh {{ vm_name }}
+          Connect to VM: ssh {{ ec2_user }}@{{ rhel_vm_ip }}
           Run hardening playbook with:
           ansible-playbook -i {{ rhel_vm_ip }}, hardening.yml
 
@@ -276,6 +279,7 @@
         subscription-manager register --username {{ rhel_username }} --password {{ rhel_password }} --force
       environment:
         LANG: en_US.UTF-8
+      when: rhel_username != ""
 
     - name: Verify VM is responsive
       debug:
