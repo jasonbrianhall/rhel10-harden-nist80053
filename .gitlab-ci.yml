@@ -15,7 +15,7 @@ boot_vm:
   tags:
     - rhel-hardening
   script:
-    - ./run_aws.sh boot
+    - ./run_aws.sh
   artifacts:
     paths:
       - .vm_ip
