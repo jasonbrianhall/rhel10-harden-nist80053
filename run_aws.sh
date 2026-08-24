@@ -64,7 +64,8 @@ case "$1" in
         ansible-playbook -i "$VM_IP", support/file_integrity.yml
         ansible-playbook -i "$VM_IP", support/identity_and_smartcard.yml
         ansible-playbook -i "$VM_IP", support/uncategorized.yml
-        ;;
+        ansible-playbook -i "$VM_IP", support/banner.yml
+	;;
     ssh)
         ansible-playbook -i "$VM_IP", support/ssh.yml
         ;;
@@ -104,6 +105,11 @@ case "$1" in
     uncategorized)
         ansible-playbook -i "$VM_IP", support/uncategorized.yml
         ;;
+    banner)
+        ansible-playbook -i "$VM_IP", support/banner.yml
+        ;;
+
+
     *)
         echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized]"
         echo ""
