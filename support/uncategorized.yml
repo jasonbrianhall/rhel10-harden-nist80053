@@ -4331,6 +4331,7 @@
     ansible.builtin.command: grub2-mkconfig -o {{ grub_cfg_path }}
     when:
     - ansible_architecture != "s390x"
+    ignore_errors: true
     tags:
     - fips_grub_enabled
     - dangerous    
