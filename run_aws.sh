@@ -5,11 +5,11 @@ AWS_REGION="${AWS_REGION:-us-gov-west-1}"
 
 # If no argument, boot the VM
 if [ -z "$1" ]; then
-    read -p "RHEL subscription username: " RHEL_USER
-    read -sp "RHEL subscription password: " RHEL_PASS
-    echo
-    ansible-playbook ec2_boot_playbook.yml \
-        -e "rhel_username=${RHEL_USER}" -e "rhel_password=${RHEL_PASS}"
+    #read -p "RHEL subscription username: " RHEL_USER
+    #read -sp "RHEL subscription password: " RHEL_PASS
+    #ansible-playbook ec2_boot_playbook.yml -e "rhel_username=${RHEL_USER}" -e "rhel_password=${RHEL_PASS}"
+
+    ansible-playbook ec2_boot_playbook.yml
 
     if [ ! -f "$VM_IP_FILE" ]; then
         echo "Error: .vm_ip was not created by the playbook"
