@@ -1,0 +1,47 @@
+---
+- name: Deploy pre-authentication legal banner
+  hosts: all
+  become: true
+
+  vars:
+    banner_src_file: files/banner.txt   # local file, edit content here
+    banner_dest: /etc/issue
+
+  tasks:
+
+    - name: Check banner source file exists on control node
+      ansible.builtin.stat:
+        path: "{{ role_path | default(playbook_dir) }}/{{ banner_src_file }}"
+      delegate_to: localhost
+      become: false
+      register: banner_file
+
+    - name: Warn and skip if banner source file is missing
+      ansible.builtin.debug:
+        msg: "Skipping banner deployment: {{ banner_src_file }} not found."
+      when: not banner_file.stat.exists
+
+    - name: Copy banner content to /etc/issue
+      ansible.builtin.copy:
+        src: "{{ banner_src_file }}"
+        dest: "{{ banner_dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+      when: banner_file.stat.exists
+      notify: restart sshd
+
+    - name: Ensure SSH Banner directive is set
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Banner\s+'
+        line: "Banner {{ banner_dest }}"
+        validate: /usr/sbin/sshd -t -f %s
+      when: banner_file.stat.exists
+      notify: restart sshd
+
+  handlers:
+    - name: restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
