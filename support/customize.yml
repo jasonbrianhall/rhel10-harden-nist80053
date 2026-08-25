@@ -1,11 +1,13 @@
 ---
-- name: Deploy pre-authentication legal banner
+- name: Deploy pre-authentication legal banner and custom CA certificates
   hosts: all
   become: true
 
   vars:
     banner_src_file: files/banner.txt   # local file, edit content here
     banner_dest: /etc/issue
+    ca_cert_src_dir: files               # local dir, place *.pem CA certs here
+    ca_cert_dest_dir: /etc/pki/ca-trust/source/anchors
 
   tasks:
 
@@ -40,8 +42,35 @@
       when: banner_file.stat.exists
       notify: restart sshd
 
+    - name: Find CA certificate files on control node
+      ansible.builtin.find:
+        paths: "{{ role_path | default(playbook_dir) }}/{{ ca_cert_src_dir }}"
+        patterns: "*.pem"
+      delegate_to: localhost
+      become: false
+      register: ca_cert_files
+
+    - name: Warn and skip if no CA certificate files found
+      ansible.builtin.debug:
+        msg: "Skipping CA trust deployment: no *.pem files found in {{ ca_cert_src_dir }}."
+      when: ca_cert_files.matched == 0
+
+    - name: Copy CA certificates to trust anchors directory
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "{{ ca_cert_dest_dir }}/{{ item.path | basename }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ ca_cert_files.files }}"
+      when: ca_cert_files.matched > 0
+      notify: update ca trust
+
   handlers:
     - name: restart sshd
       ansible.builtin.service:
         name: sshd
         state: restarted
+
+    - name: update ca trust
+      ansible.builtin.command: update-ca-trust
