@@ -127,9 +127,10 @@
         path: "{{ ssh_private_key_file }}"
       register: local_key_stat
 
-    - name: Look up existing secret in AWS Secrets Manager
+    - name: Attempt to fetch existing secret from AWS Secrets Manager
       set_fact:
-        existing_ssh_secret: "{{ lookup('community.aws.aws_secret', ssh_secret_name, region=aws_region, on_missing='skip') }}"
+        existing_ssh_secret: "{{ lookup('amazon.aws.secretsmanager_secret', ssh_secret_name, region=aws_region, on_missing='skip') }}"
+      no_log: true
 
     - name: Write private key from Secrets Manager (source of truth) to local file
       copy:
@@ -137,6 +138,7 @@
         dest: "{{ ssh_private_key_file }}"
         mode: '0600'
       when: existing_ssh_secret | length > 0
+      no_log: true
 
     - name: Warn if local key existed but did not match the secret
       debug:
@@ -177,13 +179,13 @@
         mode: '0600'
 
     - name: Store newly generated SSH private key in AWS Secrets Manager
-      community.aws.secretsmanager_secret:
-        name: "{{ ssh_secret_name }}"
-        region: "{{ aws_region }}"
-        secret_type: "string"
-        secret: "{{ lookup('file', ssh_private_key_file) }}"
-        state: present
-        overwrite: true
+      debug:
+        msg: >-
+          No secret named "{{ ssh_secret_name }}" was found in AWS Secrets
+          Manager (region {{ aws_region }}). A new local key pair was
+          generated at {{ ssh_private_key_file }}. You should add this key
+          to Secrets Manager as "{{ ssh_secret_name }}" so future runs pull
+          the same key.
       when: existing_ssh_secret | length == 0
 
     - name: Import/verify "{{ ssh_key_name }}" key pair in AWS
