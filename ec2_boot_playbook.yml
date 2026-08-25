@@ -123,11 +123,17 @@
         mode: '0700'
 
     - name: Check whether "{{ ssh_key_name }}" key pair already exists in AWS
-      amazon.aws.ec2_key_info:
-        region: "{{ aws_region }}"
-        names:
-          - "{{ ssh_key_name }}"
-      register: aws_existing_key
+      command: >
+        aws ec2 describe-key-pairs
+        --region {{ aws_region }}
+        --key-names {{ ssh_key_name }}
+      register: aws_key_check
+      changed_when: false
+      failed_when: false
+
+    - name: Record whether the AWS key pair already exists
+      set_fact:
+        aws_key_exists: "{{ aws_key_check.rc == 0 }}"
 
     - name: Check for existing local "{{ ssh_key_name }}" key pair
       stat:
@@ -191,7 +197,7 @@
       when:
         - existing_ssh_secret | length == 0
         - not local_key_stat.stat.exists
-        - aws_existing_key.keypairs | length > 0
+        - aws_key_exists | bool
 
     - name: Generate FIPS-compliant RSA {{ ssh_key_bits }}-bit key pair (no existing secret, local key, or AWS key)
       command: >
@@ -202,7 +208,7 @@
       when:
         - existing_ssh_secret | length == 0
         - not local_key_stat.stat.exists
-        - aws_existing_key.keypairs | length == 0
+        - not (aws_key_exists | bool)
 
     - name: Lock down private key permissions
       file:
@@ -227,7 +233,7 @@
         region: "{{ aws_region }}"
         key_material: "{{ lookup('file', ssh_public_key_file) }}"
         state: present
-      when: aws_existing_key.keypairs | length == 0
+      when: not (aws_key_exists | bool)
       register: aws_key
 
     - name: Note that the existing AWS key pair is being reused untouched
@@ -235,7 +241,7 @@
         msg: >-
           Key pair "{{ ssh_key_name }}" already exists in AWS - reusing it
           as-is, not re-importing or overwriting it.
-      when: aws_existing_key.keypairs | length > 0
+      when: aws_key_exists | bool
 
     - name: Find latest RHEL10 x86_64 AMI
       amazon.aws.ec2_ami_info:
