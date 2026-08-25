@@ -129,7 +129,12 @@
 
     - name: Attempt to fetch existing secret from AWS Secrets Manager
       set_fact:
-        existing_ssh_secret: "{{ lookup('amazon.aws.secretsmanager_secret', ssh_secret_name, region=aws_region, on_missing='skip') }}"
+        existing_ssh_secret_raw: "{{ lookup('amazon.aws.secretsmanager_secret', ssh_secret_name, region=aws_region, on_missing='skip') }}"
+      no_log: true
+
+    - name: Extract private key from secret JSON ({"Value": "..."})
+      set_fact:
+        existing_ssh_secret: "{{ (existing_ssh_secret_raw | from_json).Value if existing_ssh_secret_raw | length > 0 else '' }}"
       no_log: true
 
     - name: Write private key from Secrets Manager (source of truth) to local file
