@@ -1,0 +1,55 @@
+---
+- name: Pull SSH key from AWS Secrets Manager and write locally
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  vars:
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-gov-east-1', true) }}"
+    ssh_key_name: "Hardening_SSH_Key"
+    ssh_key_dir: "{{ ansible_env.HOME }}/.ssh"
+    ssh_private_key_file: "{{ ssh_key_dir }}/hardening_ssh_key"
+    ssh_public_key_file: "{{ ssh_private_key_file }}.pub"
+    ssh_secret_name: "rhel10_ssh_secret"
+  tasks:
+    - name: Ensure ~/.ssh directory exists
+      file:
+        path: "{{ ssh_key_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Fetch secret from AWS Secrets Manager
+      set_fact:
+        existing_ssh_secret_raw: "{{ lookup('amazon.aws.secretsmanager_secret', ssh_secret_name, region=aws_region, on_missing='skip') }}"
+      no_log: true
+
+    - name: 'Extract private key from secret JSON ({"Value": "..."})'
+      set_fact:
+        existing_ssh_secret: "{{ (existing_ssh_secret_raw | from_json).Value if existing_ssh_secret_raw | length > 0 else '' }}"
+      no_log: true
+
+    - name: Fail if secret was not found
+      fail:
+        msg: "No secret named \"{{ ssh_secret_name }}\" found in Secrets Manager (region {{ aws_region }})."
+      when: existing_ssh_secret | length == 0
+
+    - name: Write private key to local file
+      copy:
+        content: "{{ existing_ssh_secret }}"
+        dest: "{{ ssh_private_key_file }}"
+        mode: '0600'
+      no_log: true
+
+    - name: Regenerate public key from private key
+      command: ssh-keygen -y -f {{ ssh_private_key_file }}
+      register: derived_pubkey
+      changed_when: false
+
+    - name: Write derived public key file
+      copy:
+        content: "{{ derived_pubkey.stdout }} {{ ssh_key_name }}\n"
+        dest: "{{ ssh_public_key_file }}"
+        mode: '0644'
+
+    - name: Confirm
+      debug:
+        msg: "Wrote {{ ssh_private_key_file }} and {{ ssh_public_key_file }} from secret {{ ssh_secret_name }}."
