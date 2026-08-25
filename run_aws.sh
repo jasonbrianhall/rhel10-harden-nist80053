@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VM_IP_FILE=".vm_ip"
-AWS_REGION="${AWS_REGION:-us-gov-west-1}"
+AWS_REGION="${AWS_REGION:-}"
 
 # If no argument, boot the VM
 if [ -z "$1" ]; then
