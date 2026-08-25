@@ -132,7 +132,7 @@
         existing_ssh_secret_raw: "{{ lookup('amazon.aws.secretsmanager_secret', ssh_secret_name, region=aws_region, on_missing='skip') }}"
       no_log: true
 
-    - name: Extract private key from secret JSON ({"Value": "..."})
+    - name: 'Extract private key from secret JSON ({"Value": "..."})'
       set_fact:
         existing_ssh_secret: "{{ (existing_ssh_secret_raw | from_json).Value if existing_ssh_secret_raw | length > 0 else '' }}"
       no_log: true
@@ -170,27 +170,31 @@
         mode: '0644'
       when: existing_ssh_secret | length > 0
 
-    - name: Generate FIPS-compliant RSA {{ ssh_key_bits }}-bit key pair (no existing secret)
+    - name: Generate FIPS-compliant RSA {{ ssh_key_bits }}-bit key pair (no existing secret or local key)
       command: >
         ssh-keygen -t rsa -b {{ ssh_key_bits }}
         -f {{ ssh_private_key_file }}
         -N ""
         -C "{{ ssh_key_name }}"
-      when: existing_ssh_secret | length == 0
+      when:
+        - existing_ssh_secret | length == 0
+        - not local_key_stat.stat.exists
 
     - name: Lock down private key permissions
       file:
         path: "{{ ssh_private_key_file }}"
         mode: '0600'
 
-    - name: Store newly generated SSH private key in AWS Secrets Manager
+    - name: Recommend adding the key to Secrets Manager
       debug:
         msg: >-
           No secret named "{{ ssh_secret_name }}" was found in AWS Secrets
-          Manager (region {{ aws_region }}). A new local key pair was
-          generated at {{ ssh_private_key_file }}. You should add this key
-          to Secrets Manager as "{{ ssh_secret_name }}" so future runs pull
-          the same key.
+          Manager (region {{ aws_region }}).
+          {{ 'Using the existing local key pair at ' + ssh_private_key_file + '.'
+             if local_key_stat.stat.exists
+             else 'A new local key pair was generated at ' + ssh_private_key_file + '.' }}
+          You should add this key to Secrets Manager as "{{ ssh_secret_name }}"
+          so future runs pull the same key.
       when: existing_ssh_secret | length == 0
 
     - name: Import/verify "{{ ssh_key_name }}" key pair in AWS
