@@ -147,7 +147,7 @@
 
     - name: 'Extract private key from secret JSON ({"Value": "..."})'
       set_fact:
-        existing_ssh_secret: "{{ (existing_ssh_secret_raw | from_json).Value if existing_ssh_secret_raw | length > 0 else '' }}"
+        existing_ssh_secret: "{{ existing_ssh_secret_raw.Value }}"
       no_log: true
 
     - name: Write private key from Secrets Manager (source of truth) to local file
