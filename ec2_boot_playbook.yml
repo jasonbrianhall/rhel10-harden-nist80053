@@ -41,7 +41,7 @@
     ssh_key_dir: "{{ ansible_env.HOME }}/.ssh"
     ssh_private_key_file: "{{ ssh_key_dir }}/hardening_ssh_key"
     ssh_public_key_file: "{{ ssh_private_key_file }}.pub"
-    ssh_secret_name: "rhel10_ssh_secret"
+    ssh_secret_name: "rhel10_ssh_hardening"
     ec2_user: "ec2-user"
 
     boot_timeout: 300  # seconds to wait for SSH to come up
