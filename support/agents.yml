@@ -5,30 +5,34 @@
   gather_facts: yes
 
   tasks:
-    - name: Gather EC2 instance metadata facts
+    - name: Gather EC2 instance metadata facts (fails harmlessly off EC2)
       amazon.aws.ec2_metadata_facts:
+      ignore_errors: yes
 
-    - name: Set aws_region from instance metadata
+    - name: Set aws_region from instance metadata, if available
       set_fact:
-        aws_region: "{{ ansible_ec2_placement_region }}"
+        aws_region: "{{ ansible_ec2_placement_region | default('') }}"
 
     - name: Install Amazon SSM Agent
       dnf:
         name: "https://s3.{{ aws_region }}.amazonaws.com/amazon-ssm-{{ aws_region }}/latest/linux_amd64/amazon-ssm-agent.rpm"
         state: present
         disable_gpg_check: yes
+      when: aws_region != ''
 
     - name: Enable and start amazon-ssm-agent
       systemd:
         name: amazon-ssm-agent
         enabled: yes
         state: started
+      when: aws_region != ''
 
     - name: Install Amazon CloudWatch Agent
       dnf:
         name: "https://amazoncloudwatch-agent-{{ aws_region }}.s3.{{ aws_region }}.amazonaws.com/redhat/amd64/latest/amazon-cloudwatch-agent.rpm"
         state: present
         disable_gpg_check: yes
+      when: aws_region != ''
 
     - name: Enable and start amazon-cloudwatch-agent
       systemd:
@@ -38,4 +42,10 @@
       # No config has been pushed yet (amazon-cloudwatch-agent-ctl -a fetch-config),
       # so the service may fail to start cleanly until one is provided - don't
       # fail the whole run over that.
+      when: aws_region != ''
       ignore_errors: yes
+
+    - name: Note that AWS agents were skipped
+      debug:
+        msg: "Not running on EC2 (no instance metadata available) - skipping SSM and CloudWatch agent install."
+      when: aws_region == ''

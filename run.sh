@@ -105,7 +105,7 @@ case "$1" in
         fi
         ;;
     agents)
-        echo "Skipping agents: SSM and CloudWatch agents are AWS-only and don't apply to KVM VMs."
+        ansible-playbook -i "$VM_IP", support/agents.yml
         ;;
     *)
         echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize|check_oscap|agents]"
@@ -115,7 +115,7 @@ case "$1" in
         echo "  $0 ssh          - Run SSH hardening only"
         echo "  $0 accounts     - Run accounts and PAM hardening only"
         echo "  $0 check_oscap  - Run OpenSCAP STIG compliance scan"
-        echo "  $0 agents       - (skipped - AWS-only)"
+        echo "  $0 agents       - Install and enable SSM + CloudWatch agents (no-op off EC2)"
         echo "  ... and so on for each hardening module"
         exit 1
         ;;
