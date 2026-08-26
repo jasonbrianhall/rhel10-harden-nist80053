@@ -129,7 +129,7 @@ case "$1" in
         ;;
 
     agents)
-        ansible-playbook -i "$VM_IP", support/agents.yml -e "aws_region=$AWS_REGION"
+        ansible-playbook -i "$VM_IP", support/agents.yml
         ;;
 
     create_ami)
