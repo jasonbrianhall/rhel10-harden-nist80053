@@ -349,6 +349,12 @@
         dest: ".vm_ip"
       delegate_to: localhost
 
+    - name: Save VM Instance ID to file
+      copy:
+        content: "{{ ec2_launch.instances[0].instance_id }}"
+        dest: ".vm_instance_id"
+      delegate_to: localhost
+
 - name: Run verification on new VM
   hosts: new_vms
   gather_facts: yes
