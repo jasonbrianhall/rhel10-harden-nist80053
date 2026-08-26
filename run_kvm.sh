@@ -55,6 +55,7 @@ case "$1" in
         ansible-playbook -i "$VM_IP", support/identity_and_smartcard.yml
         ansible-playbook -i "$VM_IP", support/uncategorized.yml
         ansible-playbook -i "$VM_IP", support/customize.yml
+        ansible-playbook -i "$VM_IP", support/agents.yml
 	;;
     ssh)
     	ansible-playbook -i "$VM_IP", support/ssh.yml
