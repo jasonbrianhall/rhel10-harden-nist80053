@@ -3,6 +3,19 @@
 VM_IP_FILE=".vm_ip"
 AWS_REGION="${AWS_REGION:-}"
 
+# Auto-detect region from this instance's metadata (IMDSv2) if not already set
+if [ -z "$AWS_REGION" ]; then
+    IMDS_TOKEN=$(curl -sS -X PUT "http://169.254.169.254/latest/api/token" \
+        -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
+    AWS_REGION=$(curl -sS -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+        "http://169.254.169.254/latest/meta-data/placement/region" 2>/dev/null)
+fi
+
+if [ -z "$AWS_REGION" ]; then
+    echo "Error: Could not determine AWS region (AWS_REGION not set and instance metadata lookup failed)"
+    exit 1
+fi
+
 # If no argument, boot the VM
 if [ -z "$1" ]; then
     #read -p "RHEL subscription username: " RHEL_USER
@@ -115,6 +128,10 @@ case "$1" in
         fi
         ;;
 
+    agents)
+        ansible-playbook -i "$VM_IP", support/agents.yml -e "aws_region=$AWS_REGION"
+        ;;
+
     create_ami)
         INSTANCE_ID_FILE=".vm_instance_id"
         if [ -f "$INSTANCE_ID_FILE" ]; then
@@ -176,13 +193,14 @@ case "$1" in
         ;;
 
     *)
-        echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize|check_oscap|create_ami]"
+        echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize|check_oscap|agents|create_ami]"
         echo ""
         echo "  $0              - Boot the EC2 instance"
         echo "  $0 hardening    - Run all hardening playbooks"
         echo "  $0 ssh          - Run SSH hardening only"
         echo "  $0 accounts     - Run accounts and PAM hardening only"
         echo "  $0 check_oscap  - Run OpenSCAP STIG compliance scan"
+        echo "  $0 agents       - Install and enable SSM + CloudWatch agents"
         echo "  $0 create_ami   - Create an AMI from the instance (asks for confirmation)"
         echo "  ... and so on for each hardening module"
         exit 1

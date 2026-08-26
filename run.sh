@@ -104,14 +104,18 @@ case "$1" in
             echo "OSCAP STIG compliance score: $(cat .oscap_score)%"
         fi
         ;;
+    agents)
+        echo "Skipping agents: SSM and CloudWatch agents are AWS-only and don't apply to KVM VMs."
+        ;;
     *)
-        echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize|check_oscap]"
+        echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize|check_oscap|agents]"
         echo ""
         echo "  $0              - Boot the VM"
         echo "  $0 hardening    - Run all hardening playbooks"
         echo "  $0 ssh          - Run SSH hardening only"
         echo "  $0 accounts     - Run accounts and PAM hardening only"
         echo "  $0 check_oscap  - Run OpenSCAP STIG compliance scan"
+        echo "  $0 agents       - (skipped - AWS-only)"
         echo "  ... and so on for each hardening module"
         exit 1
         ;;
