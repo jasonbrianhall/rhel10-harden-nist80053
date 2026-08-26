@@ -2,10 +2,16 @@
 - name: Install and enable AWS SSM and CloudWatch agents
   hosts: all
   become: yes
-  vars:
-    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-gov-east-1', true) }}"
+  gather_facts: yes
 
   tasks:
+    - name: Gather EC2 instance metadata facts
+      amazon.aws.ec2_metadata_facts:
+
+    - name: Set aws_region from instance metadata
+      set_fact:
+        aws_region: "{{ ansible_ec2_placement_region }}"
+
     - name: Install Amazon SSM Agent
       dnf:
         name: "https://s3.{{ aws_region }}.amazonaws.com/amazon-ssm-{{ aws_region }}/latest/linux_amd64/amazon-ssm-agent.rpm"
