@@ -108,15 +108,18 @@ case "$1" in
     customize)
         ansible-playbook -i "$VM_IP", support/customize.yml
         ;;
-
+    check_oscap)
+        ansible-playbook -i "$VM_IP", support/scap_stig_scan.yml
+        ;;
 
     *)
-        echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize]"
+        echo "Usage: $0 [boot|hardening|ssh|accounts|audit|selinux|filesystem|kernel|network|software|session|time|integrity|identity|uncategorized|customize|check_oscap]"
         echo ""
         echo "  $0              - Boot the EC2 instance"
         echo "  $0 hardening    - Run all hardening playbooks"
         echo "  $0 ssh          - Run SSH hardening only"
         echo "  $0 accounts     - Run accounts and PAM hardening only"
+        echo "  $0 check_oscap  - Run OpenSCAP STIG compliance scan"
         echo "  ... and so on for each hardening module"
         exit 1
         ;;

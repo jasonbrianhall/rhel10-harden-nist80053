@@ -1,0 +1,72 @@
+---
+- name: Install OpenSCAP and run STIG compliance scan
+  hosts: all
+  become: yes
+  vars:
+    scap_content: /usr/share/xml/scap/ssg/content/ssg-rhel10-ds.xml
+    scap_profile: xccdf_org.ssgproject.content_profile_stig
+    scap_results_dir: /root/scap-results
+    scap_local_dir: "./scap-results"   # where results land on the control node
+    scap_min_score: 90.0
+
+  tasks:
+    - name: Install openscap-scanner, scap-security-guide, xmllint
+      dnf:
+        name:
+          - openscap-scanner
+          - scap-security-guide
+          - libxml2   # provides xmllint, used to pull the score out below
+        state: present
+
+    - name: Ensure results directory exists on target
+      file:
+        path: "{{ scap_results_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Run OpenSCAP STIG evaluation
+      command: >
+        oscap xccdf eval
+        --profile {{ scap_profile }}
+        --results {{ scap_results_dir }}/results.xml
+        --report {{ scap_results_dir }}/report.html
+        {{ scap_content }}
+      register: oscap_run
+      # oscap exits 2 when the scan ran fine but some rules failed - that's
+      # expected/normal, only >2 means the scan itself errored out
+      failed_when: oscap_run.rc > 2
+      changed_when: true
+
+    - name: Fetch results.xml to control node
+      fetch:
+        src: "{{ scap_results_dir }}/results.xml"
+        dest: "{{ scap_local_dir }}/{{ inventory_hostname }}-results.xml"
+        flat: yes
+
+    - name: Fetch HTML report to control node
+      fetch:
+        src: "{{ scap_results_dir }}/report.html"
+        dest: "{{ scap_local_dir }}/{{ inventory_hostname }}-report.html"
+        flat: yes
+
+    - name: Extract compliance score from results.xml
+      shell: >
+        xmllint --xpath "string(//*[local-name()='score'][1])"
+        {{ scap_results_dir }}/results.xml
+      register: scap_score_raw
+      changed_when: false
+
+    - name: Set compliance score fact
+      set_fact:
+        scap_score: "{{ scap_score_raw.stdout | trim | float }}"
+
+    - name: Display compliance score
+      debug:
+        msg: "STIG compliance score for {{ inventory_hostname }}: {{ scap_score }}%"
+
+    - name: Assert score meets minimum threshold
+      assert:
+        that:
+          - scap_score >= scap_min_score
+        fail_msg: "Compliance score {{ scap_score }}% is below required {{ scap_min_score }}%"
+        success_msg: "Compliance score {{ scap_score }}% meets required {{ scap_min_score }}%"
