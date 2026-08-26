@@ -144,10 +144,16 @@ case "$1" in
 
         echo "About to create an AMI from instance: $INSTANCE_ID (IP: $VM_IP)"
         echo "AMI name: $AMI_NAME"
-        read -p "Proceed with AMI creation? [y/N] " CONFIRM
-        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "AMI creation cancelled."
-            exit 0
+        if [ "$CI" = "true" ]; then
+            # In GitLab CI the manual job trigger IS the human review step -
+            # a terminal prompt here would just hang the runner.
+            echo "Running in CI (manual job trigger already confirmed) - proceeding without prompt."
+        else
+            read -p "Proceed with AMI creation? [y/N] " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "AMI creation cancelled."
+                exit 0
+            fi
         fi
 
         AMI_ID=$(aws ec2 create-image \

@@ -10,6 +10,7 @@ stages:
   - boot
   - hardening
   - compliance
+  - ami
 
 boot_vm:
   stage: boot
@@ -46,3 +47,18 @@ check_oscap:
       - .oscap_score
     expire_in: 30 days
     when: always
+
+create_ami:
+  stage: ami
+  tags:
+    - rhel-hardening
+  needs:
+    - boot_vm
+    - check_oscap
+  when: manual
+  script:
+    - ./run_aws.sh create_ami
+  artifacts:
+    paths:
+      - .vm_ami_id
+    expire_in: 30 days
