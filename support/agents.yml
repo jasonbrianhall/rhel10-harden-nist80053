@@ -1,13 +1,22 @@
 ---
-- name: Install and enable AWS SSM and CloudWatch agents
+- name: Install Agents
   hosts: all
   become: yes
   gather_facts: yes
 
   tasks:
-    - name: Gather EC2 instance metadata facts (fails harmlessly off EC2)
+    - name: Quick check for EC2 metadata endpoint (fast timeout)
+      uri:
+        url: http://169.254.169.254/latest/meta-data/
+        method: GET
+        timeout: 2
+      register: ec2_check
+      failed_when: false
+      changed_when: false
+
+    - name: Gather EC2 instance metadata facts (only if endpoint responded)
       amazon.aws.ec2_metadata_facts:
-      ignore_errors: yes
+      when: ec2_check.status is defined and ec2_check.status == 200
 
     - name: Set aws_region from instance metadata, if available
       set_fact:
@@ -20,7 +29,7 @@
         disable_gpg_check: yes
       when: aws_region != ''
 
-    - name: Enable and start amazon-ssm-agent
+    - name: Enable and start Amazon SSM Agent
       systemd:
         name: amazon-ssm-agent
         enabled: yes
@@ -34,7 +43,7 @@
         disable_gpg_check: yes
       when: aws_region != ''
 
-    - name: Enable and start amazon-cloudwatch-agent
+    - name: Enable and start Amazon CloudWatch Agent
       systemd:
         name: amazon-cloudwatch-agent
         enabled: yes
