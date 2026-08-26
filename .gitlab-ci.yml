@@ -14,10 +14,10 @@ stages:
 
 boot_vm:
   stage: boot
-  tags:
-    - rhel-hardening
+  #tags:
+  #  - rhel-hardening
   script:
-    - ./run_aws.sh
+    - sh run_aws.sh
   artifacts:
     paths:
       - .vm_ip
@@ -25,22 +25,22 @@ boot_vm:
 
 run_hardening:
   stage: hardening
-  tags:
-    - rhel-hardening
+  #tags:
+  #  - rhel-hardening
   needs:
     - boot_vm
   script:
-    - ./run_aws.sh hardening
+    - sh run_aws.sh hardening
 
 check_oscap:
   stage: compliance
-  tags:
-    - rhel-hardening
+  #tags:
+  #  - rhel-hardening
   needs:
     - boot_vm
     - run_hardening
   script:
-    - ./run_aws.sh check_oscap
+    - sh run_aws.sh check_oscap
   artifacts:
     paths:
       - scap-results/
@@ -50,14 +50,14 @@ check_oscap:
 
 create_ami:
   stage: ami
-  tags:
-    - rhel-hardening
+  #tags:
+  #  - rhel-hardening
   needs:
     - boot_vm
     - check_oscap
   when: manual
   script:
-    - ./run_aws.sh create_ami
+    - sh run_aws.sh create_ami
   artifacts:
     paths:
       - .vm_ami_id
