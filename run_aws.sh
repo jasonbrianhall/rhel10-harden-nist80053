@@ -110,6 +110,9 @@ case "$1" in
         ;;
     check_oscap)
         ansible-playbook -i "$VM_IP", support/scap_stig_scan.yml
+        if [ -f ".oscap_score" ]; then
+            echo "OSCAP STIG compliance score: $(cat .oscap_score)%"
+        fi
         ;;
 
     *)

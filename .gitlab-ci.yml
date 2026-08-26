@@ -9,6 +9,7 @@ variables:
 stages:
   - boot
   - hardening
+  - compliance
 
 boot_vm:
   stage: boot
@@ -29,3 +30,19 @@ run_hardening:
     - boot_vm
   script:
     - ./run_aws.sh hardening
+
+check_oscap:
+  stage: compliance
+  tags:
+    - rhel-hardening
+  needs:
+    - boot_vm
+    - run_hardening
+  script:
+    - ./run_aws.sh check_oscap
+  artifacts:
+    paths:
+      - scap-results/
+      - .oscap_score
+    expire_in: 30 days
+    when: always
