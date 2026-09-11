@@ -1,0 +1,66 @@
+---
+- name: Install Falcon Sensor
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  vars:
+    falcon_s3_bucket: "your-bucket-name"       # override in inventory/group_vars
+    falcon_rpm_name: "falcon-sensor.rpm"
+    falcon_cid: "{{ vault_falcon_cid }}"                     # Changeme
+    falcon_provisioning_token: "{{ vault_falcon_token | default('') }}"
+    falcon_cloud: "us-gov-1"                                 # us-1 | us-2 | eu-1 | us-gov-1 | us-gov-2 -- verify against your CID in the Falcon console
+
+  tasks:
+    - name: Check if Falcon sensor already installed
+      command: rpm -q falcon-sensor
+      register: falcon_installed
+      failed_when: false
+      changed_when: false
+
+    - name: Download Falcon sensor RPM from S3
+      amazon.aws.aws_s3:
+        bucket: "{{ falcon_s3_bucket }}"
+        object: "{{ falcon_rpm_name }}"
+        dest: "/tmp/{{ falcon_rpm_name }}"
+        mode: get
+      when: falcon_installed.rc != 0
+
+    - name: Install Falcon sensor RPM
+      dnf:
+        name: "/tmp/{{ falcon_rpm_name }}"
+        state: present
+        disable_gpg_check: yes
+      when: falcon_installed.rc != 0
+
+    - name: Check current CID (idempotency)
+      command: /opt/CrowdStrike/falconctl -g --cid
+      register: falcon_cid_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set CID (and provisioning token, if set)
+      command: >
+        /opt/CrowdStrike/falconctl -s
+        --cid={{ falcon_cid }}
+        {{ ('--provisioning-token=' + falcon_provisioning_token) if falcon_provisioning_token else '' }}
+      when: falcon_cid not in falcon_cid_check.stdout
+      no_log: true
+
+    - name: Set Falcon cloud
+      command: /opt/CrowdStrike/falconctl -s --cloud={{ falcon_cloud }}
+      changed_when: false
+
+    - name: Enable and start Falcon sensor
+      systemd:
+        name: falcon-sensor
+        enabled: yes
+        state: started
+
+    - name: Verify sensor got an AID (registered successfully)
+      command: /opt/CrowdStrike/falconctl -g --aid
+      register: falcon_aid
+      changed_when: false
+      retries: 3
+      delay: 5
+      until: "'aid=' in falcon_aid.stdout and 'aid=\"\"' not in falcon_aid.stdout"
