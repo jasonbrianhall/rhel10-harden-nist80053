@@ -408,3 +408,55 @@
     - low_severity
     - no_reboot_needed
     - restrict_strategy
+
+    - name: Detect if this is an EC2 instance
+      ansible.builtin.stat:
+        path: /sys/hypervisor/uuid
+      register: hv_uuid_file
+      when:
+      - '"kernel-core" in ansible_facts.packages'
+      - '"chrony" in ansible_facts.packages'
+
+
+    - name: Read hypervisor UUID
+      ansible.builtin.slurp:
+        src: /sys/hypervisor/uuid
+      register: hv_uuid
+      when: hv_uuid_file.stat.exists
+
+    - name: Set is_ec2 fact
+      ansible.builtin.set_fact:
+        is_ec2: >-
+          {{ hv_uuid_file.stat.exists and
+             (hv_uuid.content | b64decode | lower).startswith('ec2') }}
+      when: hv_uuid_file.stat.exists
+
+    - name: Default is_ec2 to false
+      ansible.builtin.set_fact:
+        is_ec2: false
+      when: not hv_uuid_file.stat.exists
+
+    - name: Configure chrony for Amazon Time Sync (EC2 only)
+      when: is_ec2 | bool
+      block:
+        - name: Ensure chrony is installed
+          ansible.builtin.package:
+            name: chrony
+            state: present
+
+        - name: Add Amazon Time Sync server to chrony
+          ansible.builtin.lineinfile:
+            path: /etc/chrony.conf
+            # Amazon Linux / RHEL style path; adjust if needed
+            # path: /etc/chrony/chrony.conf   # Debian/Ubuntu
+            regexp: '^server\s+169\.254\.169\.123'
+            line: 'server 169.254.169.123 prefer iburst minpoll 4 maxpoll 4'
+            insertafter: '^#.*Please consider joining the pool'
+            state: present
+            backup: true
+
+        - name: Restart and enable chronyd
+          ansible.builtin.service:
+            name: chronyd
+            state: restarted
+            enabled: true
