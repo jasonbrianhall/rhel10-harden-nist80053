@@ -422,14 +422,12 @@
       ansible.builtin.slurp:
         src: /sys/hypervisor/uuid
       register: hv_uuid
-      when: hv_uuid_file.stat.exists
 
     - name: Set is_ec2 fact
       ansible.builtin.set_fact:
         is_ec2: >-
           {{ hv_uuid_file.stat.exists and
              (hv_uuid.content | b64decode | lower).startswith('ec2') }}
-      when: hv_uuid_file.stat.exists
 
     - name: Default is_ec2 to false
       ansible.builtin.set_fact:
